@@ -7,7 +7,7 @@ class User extends CI_Controller
     {
 
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-        $data['title'] = "Selamat Datang";
+        $data['title'] = "My Profile";
 
         $this->load->view('template/header',$data);
         $this->load->view('template/sidebar',$data);

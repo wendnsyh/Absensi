@@ -39,12 +39,12 @@
 
                     $subMenu = $this->db->query($querySubMenu)->result_array();
                     ?>
-
                     <?php foreach ($subMenu as $sm) : ?>
-                        <li class="nav-item active">
+                        <li class="nav-item <?= ($title == $sm['title']) ? 'active' : '' ?>">
                             <a href="<?= base_url($sm['url']) ?>" aria-expanded="false">
                                 <i class="<?= $sm['icon']; ?>"></i>
                                 <p><?= $sm['title']; ?></p>
+                                <hr>
                             </a>
                         </li>
                     <?php endforeach; ?>
