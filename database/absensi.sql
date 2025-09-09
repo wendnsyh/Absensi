@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jul 06, 2025 at 07:53 PM
+-- Generation Time: Sep 09, 2025 at 04:08 AM
 -- Server version: 10.4.10-MariaDB
 -- PHP Version: 7.1.33
 
@@ -19,7 +19,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `penduduk`
+-- Database: `absensi`
 --
 
 -- --------------------------------------------------------
@@ -46,7 +46,7 @@ CREATE TABLE `user` (
 INSERT INTO `user` (`id`, `name`, `email`, `image`, `password`, `role_id`, `is_active`, `date_created`) VALUES
 (5, 'Muhammad Wendy Martadiansyah', 'wendy.martadiandasyah75@gmail.com', 'default.jpg', '$2y$10$gOUmr/zVsc3HhaCa3Jxz1uIC5IOF6QtIEiBeAcrogU1ThW2xnzweW', 1, 1, 1751614988),
 (6, 'Pria', '19220300@bsi.ac.id', 'default.jpg', '$2y$10$vZAvNMhdNBJ/WXz47FTUa.stGqRLEfxApXmufTJpMJzmOT8JHIm7.', 2, 1, 1751622872),
-(7, 'asas', 'najdahh.isa@gmail.com', 'default.jpg', '$2y$10$gbRbMcCxonZ9HrIIl2ymG.FqjDCBh05XZwtJMqqIIPNUfgSMPbxDu', 2, 1, 1751819611);
+(9, 'Muhammad Wendy', 'wendy.diansyah94@gmail.com', 'default.jpg', '$2y$10$5dT6zC2JoLuCS5XnUfa0nuwLTBnTsEJiLcwmG8Fy3pY3DBbzz5aoW', 2, 1, 1757383125);
 
 -- --------------------------------------------------------
 
@@ -68,7 +68,8 @@ INSERT INTO `user_access_menu` (`id`, `role_id`, `menu_id`) VALUES
 (1, 1, 1),
 (2, 1, 2),
 (5, 2, 2),
-(7, 1, 5);
+(7, 1, 5),
+(11, 1, 9);
 
 -- --------------------------------------------------------
 
@@ -89,8 +90,7 @@ INSERT INTO `user_menu` (`id`, `menu`) VALUES
 (1, 'Admin'),
 (2, 'Staff'),
 (5, 'Menu'),
-(7, 'teset'),
-(8, 'asas');
+(9, 'Master Data');
 
 -- --------------------------------------------------------
 
@@ -134,7 +134,11 @@ CREATE TABLE `user_sub_menu` (
 INSERT INTO `user_sub_menu` (`id`, `menu_id`, `title`, `url`, `icon`, `is_active`) VALUES
 (1, 1, 'Dashboard', 'admin', 'fas fa-fw fa-home', 1),
 (3, 2, 'My Profile', 'user', 'fas fa-fw fa-user', 1),
-(5, 5, 'Menu Management', 'menu', 'fas fa-fw fa-folder', 1);
+(5, 5, 'Menu Management', 'menu', 'fas fa-fw fa-folder', 1),
+(7, 5, 'Submenu Management', 'menu/submenu', 'fas fa-fw fa-folder-open', 1),
+(9, 9, 'Data Penduduk', 'penduduk', 'fas fa-fw fa-book', 1),
+(10, 1, 'Data Penduduk', 'penduduk', 'fas fa-fw-book', 1),
+(11, 5, 'Data Penduduk', 'penduduk', 'fas fa-fw-book', 1);
 
 --
 -- Indexes for dumped tables
@@ -178,19 +182,19 @@ ALTER TABLE `user_sub_menu`
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `user_access_menu`
 --
 ALTER TABLE `user_access_menu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- AUTO_INCREMENT for table `user_menu`
 --
 ALTER TABLE `user_menu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `user_role`
@@ -202,7 +206,7 @@ ALTER TABLE `user_role`
 -- AUTO_INCREMENT for table `user_sub_menu`
 --
 ALTER TABLE `user_sub_menu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
