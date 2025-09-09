@@ -6,7 +6,6 @@ class Menu extends CI_Controller
     {
         parent::__construct();
         is_logged_in();
-        }
     }
 
     public function index()
@@ -55,7 +54,7 @@ class Menu extends CI_Controller
             $this->load->view('template/topbar', $data);
             $this->load->view('menu/submenu', $data);
             $this->load->view('template/footer');
-        }else{
+        } else {
             $data = [
                 'title' => $this->input->post('title'),
                 'menu_id' => $this->input->post('menu_id'),
@@ -63,11 +62,10 @@ class Menu extends CI_Controller
                 'icon' => $this->input->post('icon'),
                 'is_active' => $this->input->post('is_active')
             ];
-            $this->db->insert('user_sub_menu',$data);
+            $this->db->insert('user_sub_menu', $data);
             $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">
             Sub Menu baru telah dibuat!</div>');
             redirect('menu/submenu');
         }
-
     }
 }
