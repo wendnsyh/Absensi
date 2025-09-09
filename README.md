@@ -1,2 +1,2 @@
-# Pendataan
-Pendataan Penduduk (CRUD) Menggunakan Code Igniter 3
+# Absensi
+Rekab Absensi Untuk Menentukan Karyawan Terbaik Menggunakan Code Igniter 3
