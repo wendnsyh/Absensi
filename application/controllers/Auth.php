@@ -41,7 +41,7 @@ class Auth extends CI_Controller
                         'role_id' => $user['role_id'],
                     ];
                     $this->session->set_userdata($data);
-                    if($user['role_id'] == 1){
+                    if ($user['role_id'] == 1) {
                         redirect('admin');
                     }
                     redirect('user');
@@ -105,5 +105,10 @@ class Auth extends CI_Controller
         $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">
         Anda telah logout!</div>');
         redirect('auth');
+    }
+
+    public function blocked()
+    {    
+        $this->load->view('auth/blocked');
     }
 }
