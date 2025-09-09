@@ -29,9 +29,12 @@
                                         <div class="custom-control custom-checkbox">
                                             <input type="checkbox" class="custom-control-input"
                                                 id="menu<?= $m['id']; ?>"
-                                                <?= check_access($role['id'], $m['id']); ?>>
+                                                <?= check_access($role['id'], $m['id']); ?>
+                                                data-role="<?= $role['id']; ?>"
+                                                data-menu="<?= $m['id']; ?>">
                                             <label class="custom-control-label" for="menu<?= $m['id']; ?>"></label>
                                         </div>
+
 
                                     </td>
                                 </tr>
