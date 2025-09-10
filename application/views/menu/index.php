@@ -26,7 +26,7 @@
                                     <td><?= $i++; ?></td>
                                     <td><?= $m['menu']; ?></td>
                                     <td>
-                                        <a href="#" class="badge badge-success">
+                                        <a href="<?= base_url("Menu/edit_menu")?>" class="badge badge-success">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
                                         <a href="#" class="badge badge-danger">

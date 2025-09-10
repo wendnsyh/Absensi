@@ -10,4 +10,9 @@ class Menu_model extends CI_Model
 
         return $this->db->query($query)->result_array();
     }
+    public function updateMenu($id, $data)
+    {
+        $this->db->where('id', $id);
+        return $this->db->update('user_menu', $data);
+    }
 }
