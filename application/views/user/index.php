@@ -1,25 +1,54 @@
-        <div class="main-panel">
-            <div class="content">
-                <div class="page-inner">
-                    <div class="mt-2 mb-4">
-                        <h2 class="text-white pb-2">Welcome back, <?= $user['name']; ?>!</h2>
-                        <h5 class="text-white op-7 mb-4">Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself.</h5>
-                    </div>
-                    <div class="switch-block">
-                        <h4>Background</h4>
-                        <div class="btnSwitch">
-                            <button type="button" class="changeBackgroundColor" data-color="bg2"></button>
-                            <button type="button" class="changeBackgroundColor selected" data-color="bg1"></button>
-                            <button type="button" class="changeBackgroundColor" data-color="bg3"></button>
-                            <button type="button" class="selected changeBackgroundColor" data-color="dark"></button>
+<div class="main-panel">
+    <div class="content">
+        <div class="page-inner">
+            <div class="page-header">
+                <h4 class="page-title">Profil Administrator</h4>
+                <ul class="breadcrumbs">
+                    <li class="nav-home">
+                        <a href="<?= base_url('administrator') ?>">
+                            <i class="flaticon-home"></i>
+                        </a>
+                    </li>
+                    <li class="separator">
+                        <i class="flaticon-right-arrow"></i>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#">Profil</a>
+                    </li>
+                </ul>
+
+            </div>
+
+            <div class="row">
+                <div class="col-lg-5 col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">Detail Profil</div>
+                        </div>
+                        <div class="card-body">
+                            <form action="<?php echo base_url('administrator/profile/update'); ?>" method="post">
+                                <div class="form-group">
+                                    <label for="nama_admin">Nama:</label>
+                                    <input type="text" class="form-control <?= form_error('name') ? 'is-invalid' : '' ?>" id="name" name="name" value="<?= $user['name'] ?>">
+                                    <?= form_error('name', '<small class="text-danger">', '</small>'); ?>
+                                </div>
+                                <div class="form-group">
+                                    <label for="username">Username:</label>
+                                    <input type="text" class="form-control <?= form_error('email') ? 'is-invalid' : '' ?>" id="email" name="email" value="<?= $user['email'] ?>">
+                                    <?= form_error('email', '<small class="text-danger">', '</small>'); ?>
+                                </div>
+
+                                <div class="ml-auto">
+                                    <button type="submit" class="btn btn-success btn-round mt-3">Ubah Profil</button>
+                                    <a href="<?php echo base_url('administrator/profile/ubah-password'); ?>" class="btn btn-primary btn-round">
+                                        <i class="fas fa-unlock-alt mr-2"></i> Ubah Password
+                                    </a>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="custom-toggle">
-                <i class="flaticon-settings"></i>
-            </div>
         </div>
-        <!-- End Custom template -->
     </div>
-   
+</div>
