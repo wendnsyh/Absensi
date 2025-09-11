@@ -1,3 +1,5 @@
+
+ 
  <!--   Core JS Files   -->
  <script src="<?= base_url('assets/') ?>/atlantis/js/core/jquery.3.2.1.min.js"></script>
  <script src="<?= base_url('assets/') ?>/atlantis/js/core/popper.min.js"></script>

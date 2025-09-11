@@ -137,7 +137,7 @@
                                             <div class="avatar-lg"><img src=<?= base_url('assets/img/profile'). $user['image']; ?>" alt="image profile" class="avatar-img rounded"></div>
                                             <div class="u-text">
                                                 <h4><?= $user['name']; ?></h4>
-                                                <p class="text-muted"><?= $user['email']; ?></p><a href="profile.html" class="btn btn-xs btn-secondary btn-sm">View Profile</a>
+                                                <p class="text-muted"><?= $user['email']; ?></p><a href="<?= base_url('user')?>" class="btn btn-xs btn-secondary btn-sm">View Profile</a>
                                             </div>
                                         </div>
                                     </li>
