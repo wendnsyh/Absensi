@@ -57,73 +57,6 @@
                             </a>
                         </li>
                         <li class="nav-item dropdown hidden-caret">
-                            <a class="nav-link dropdown-toggle" href="#" id="messageDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                <i class="fa fa-envelope"></i>
-                            </a>
-                            <ul class="dropdown-menu messages-notif-box animated fadeIn" aria-labelledby="messageDropdown">
-                                <li>
-                                    <div class="dropdown-title d-flex justify-content-between align-items-center">
-                                        Messages
-                                        <a href="#" class="small">Mark all as read</a>
-                                    </div>
-                                </li>
-
-                            </ul>
-                        </li>
-                        <li class="nav-item dropdown hidden-caret">
-                            <a class="nav-link" data-toggle="dropdown" href="#" aria-expanded="false">
-                                <i class="fas fa-layer-group"></i>
-                            </a>
-                            <div class="dropdown-menu quick-actions quick-actions-info animated fadeIn">
-                                <div class="quick-actions-header">
-                                    <span class="title mb-1">Quick Actions</span>
-                                    <span class="subtitle op-8">Shortcuts</span>
-                                </div>
-                                <div class="quick-actions-scroll scrollbar-outer">
-                                    <div class="quick-actions-items">
-                                        <div class="row m-0">
-                                            <a class="col-6 col-md-4 p-0" href="#">
-                                                <div class="quick-actions-item">
-                                                    <i class="flaticon-file-1"></i>
-                                                    <span class="text">Generated Report</span>
-                                                </div>
-                                            </a>
-                                            <a class="col-6 col-md-4 p-0" href="#">
-                                                <div class="quick-actions-item">
-                                                    <i class="flaticon-database"></i>
-                                                    <span class="text">Create New Database</span>
-                                                </div>
-                                            </a>
-                                            <a class="col-6 col-md-4 p-0" href="#">
-                                                <div class="quick-actions-item">
-                                                    <i class="flaticon-pen"></i>
-                                                    <span class="text">Create New Post</span>
-                                                </div>
-                                            </a>
-                                            <a class="col-6 col-md-4 p-0" href="#">
-                                                <div class="quick-actions-item">
-                                                    <i class="flaticon-interface-1"></i>
-                                                    <span class="text">Create New Task</span>
-                                                </div>
-                                            </a>
-                                            <a class="col-6 col-md-4 p-0" href="#">
-                                                <div class="quick-actions-item">
-                                                    <i class="flaticon-list"></i>
-                                                    <span class="text">Completed Tasks</span>
-                                                </div>
-                                            </a>
-                                            <a class="col-6 col-md-4 p-0" href="#">
-                                                <div class="quick-actions-item">
-                                                    <i class="flaticon-file"></i>
-                                                    <span class="text">Create New Invoice</span>
-                                                </div>
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="nav-item dropdown hidden-caret">
                             <a class="dropdown-toggle profile-pic" data-toggle="dropdown" href="#" aria-expanded="false">
                                 <div class="avatar-sm">
                                     <img src="<?= base_url('assets/img/profile/') . $user['image']; ?>" alt="image profile" class="avatar-img rounded-circle">
@@ -144,10 +77,7 @@
                                     </li>
                                     <li>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" href="#">My Profile</a>
-                                        <a class="dropdown-item" href="#">Inbox</a>
-                                        <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" href="#">Account Setting</a>
+                                        <a class="dropdown-item" href="<?=  base_url('user/ubah_password')?>">Account Setting</a>
                                         <div class="dropdown-divider"></div>
                                         <a class="dropdown-item" href="<?= base_url('auth/logout') ?>" onclick="return confirm('Yakin logout?')">Logout</a>
                                     </li>

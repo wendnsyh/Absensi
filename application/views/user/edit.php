@@ -41,7 +41,7 @@
                         <label for="email" class="col-sm-2 col-form-label">Email</label>
                         <div class="col-sm-10">
                             <input type="text"
-                                class="form-control <?= form_error('email') ? 'is-invalid' : '' ?>"
+                                class="text-warning font-weight-bold form-control <?= form_error('email') ? 'is-invalid' : '' ?>"
                                 id="email"
                                 name="email"
                                 value="<?= set_value('email', $user['email']); ?>" readonly>
