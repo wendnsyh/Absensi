@@ -1,9 +1,9 @@
 <div class="main-panel">
-            
-            <div class="custom-toggle">
-                <i class="flaticon-settings"></i>
+    <div class="content">
+        <div class="page-inner">
+            <div class="page-header">
+                <h4 class="page-title"><?= $title; ?></h4>
+
             </div>
         </div>
-        <!-- End Custom template -->
     </div>
-   
