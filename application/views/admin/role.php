@@ -29,7 +29,7 @@
                                         <a href="<?php echo base_url('admin/roleaccess/'). $r['id'];?>" class="badge badge-warning">
                                             <i class="fas fa-brands fa-accessible-icon"></i> Access
                                         </a>
-                                        <a href="#" class="badge badge-success">
+                                        <a href="<?php echo base_url('admin/editRole/'). $r['id'];?>" class="badge badge-success">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
                                         <a href="#" class="badge badge-danger">

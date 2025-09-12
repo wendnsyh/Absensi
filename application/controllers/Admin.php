@@ -36,6 +36,42 @@ class Admin extends CI_Controller
         $this->load->view('template/footer');
     }
 
+
+    public function editRole($id)
+    {
+        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['title'] = "Edit Role";
+
+        // ambil data role berdasarkan ID
+        $data['role'] = $this->db->get_where('user_role', ['id' => $id])->row_array();
+
+        $this->form_validation->set_rules('role', 'Role', 'required|trim');
+
+        if ($this->form_validation->run() == FALSE) {
+            // tampilkan form edit
+            $this->load->view('template/header', $data);
+            $this->load->view('template/sidebar', $data);
+            $this->load->view('template/topbar', $data);
+            $this->load->view('admin/edit_role', $data);
+            $this->load->view('template/footer');
+        } else {
+            // update ke database
+            $this->db->set('role', $this->input->post('role'));
+            $this->db->where('id', $this->input->post('id'));
+            $this->db->update('user_role');
+
+        $this->session->set_flashdata('message', '
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        Role berhasil diperbarui!
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+         </button>
+        </div>');
+         redirect('admin/role');
+
+        }
+    }
+
     public function roleaccess($role_id)
     {
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
