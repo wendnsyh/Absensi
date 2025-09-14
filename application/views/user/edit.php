@@ -13,14 +13,20 @@
                         <i class="flaticon-right-arrow"></i>
                     </li>
                     <li class="nav-item">
+                        <a href="<?= base_url("user") ?>">Profil</a>
+                    </li>
+                    <li class="separator">
+                        <i class="flaticon-right-arrow"></i>
+                    </li>
+                    <li class="nav-item">
                         <a href="#">Edit Profil</a>
                     </li>
                 </ul>
             </div>
-            <?= $this->session->flashdata('message'); ?>
 
             <div class="row">
                 <div class="col-lg-8">
+
                     <?= form_open_multipart('user/edit'); ?>
 
                     <!-- Nama -->
@@ -41,7 +47,7 @@
                         <label for="email" class="col-sm-2 col-form-label">Email</label>
                         <div class="col-sm-10">
                             <input type="text"
-                                class="text-warning font-weight-bold form-control <?= form_error('email') ? 'is-invalid' : '' ?>"
+                                class="form-control text-primary font-weight-bold <?= form_error('email') ? 'is-invalid' : '' ?>"
                                 id="email"
                                 name="email"
                                 value="<?= set_value('email', $user['email']); ?>" readonly>

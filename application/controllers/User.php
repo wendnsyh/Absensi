@@ -72,7 +72,7 @@ class User extends CI_Controller
             $this->db->update('user');
 
             $this->session->set_flashdata('message', '
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <div class="text-success font-weight-bold alert alert-success alert-dismissible fade show" role="alert">
                 Profil berhasil diperbarui!
                 <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -80,6 +80,25 @@ class User extends CI_Controller
             </div>
         ');
             redirect('user/edit');
+        }
+    }
+
+    public function ubah_password()
+    {
+
+        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['title'] = "Ubah Password";
+
+        $this->form_validation->set_rules('current_password', 'Password Saat Ini', 'required|trim');
+        $this->form_validation->set_rules('new_password1', ' Password Baru', 'required|trim|min_lenght[6]|matches[new_password2]');
+        $this->form_validation->set_rules('new_password2', 'Konfirmasi Password', 'required|trim|min_lenght[6]|matches[new_password1]');
+
+        if ($this->form_validation->run() == false) {
+            $this->load->view('template/header', $data);
+            $this->load->view('template/sidebar', $data);
+            $this->load->view('template/topbar', $data);
+            $this->load->view('user/ubah_password', $data);
+            $this->load->view('template/footer');
         }
     }
 }

@@ -48,7 +48,7 @@
                             <a href="<?= base_url('user/edit'); ?>" class="btn btn-primary">
                                 <i class="fas fa-user-edit mr-2"></i>Edit Profil
                             </a>
-                            <a href="<?= base_url('auth/ubahpassword'); ?>" class="btn btn-primary">
+                            <a href="<?= base_url('user/ubah_password'); ?>" class="btn btn-primary">
                                 <i class="fas fa-unlock-alt mr-2"></i> Ubah Password
                             </a>
                         </div>
