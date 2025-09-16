@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 12, 2025 at 05:07 AM
+-- Generation Time: Sep 16, 2025 at 05:48 PM
 -- Server version: 10.4.10-MariaDB
 -- PHP Version: 7.1.33
 
@@ -31,10 +31,18 @@ SET time_zone = "+00:00";
 CREATE TABLE `karyawan` (
   `id_karyawan` int(11) NOT NULL,
   `nama` varchar(255) NOT NULL,
-  `nik` varchar(50) NOT NULL,
-  `jabatan` varchar(100) NOT NULL,
+  `nip` varchar(50) NOT NULL,
+  `tanggal_masuk` date NOT NULL,
   `divisi` varchar(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+--
+-- Dumping data for table `karyawan`
+--
+
+INSERT INTO `karyawan` (`id_karyawan`, `nama`, `nip`, `tanggal_masuk`, `divisi`) VALUES
+(3, 'Muhammad Wendy', '121', '2025-09-12', 'Sekretariat'),
+(4, 'Muhammad Wendy', '1211212121121', '2025-10-03', 'Linjamsos');
 
 -- --------------------------------------------------------
 
@@ -58,9 +66,9 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`id`, `name`, `email`, `image`, `password`, `role_id`, `is_active`, `date_created`) VALUES
-(5, 'Muhammad Wendy Diansyah', 'wendy.martadiandasyah75@gmail.com', 'n6kudm7s6obc1.jpeg', '$2y$10$gOUmr/zVsc3HhaCa3Jxz1uIC5IOF6QtIEiBeAcrogU1ThW2xnzweW', 1, 1, 1751614988),
+(5, 'Super Admin', 'superadmin@gmail.com', 'wp7153965.jpg', '$2y$10$gOUmr/zVsc3HhaCa3Jxz1uIC5IOF6QtIEiBeAcrogU1ThW2xnzweW', 1, 1, 1751614988),
 (6, 'Pria', '19220300@bsi.ac.id', 'default.jpg', '$2y$10$vZAvNMhdNBJ/WXz47FTUa.stGqRLEfxApXmufTJpMJzmOT8JHIm7.', 2, 1, 1751622872),
-(9, 'Muhammad Wendy', 'wendy.diansyah94@gmail.com', 'default.jpg', '$2y$10$5dT6zC2JoLuCS5XnUfa0nuwLTBnTsEJiLcwmG8Fy3pY3DBbzz5aoW', 2, 1, 1757383125),
+(9, 'Muhammad Wendy', 'wendy.diansyah94@gmail.com', 'Cr__@fahrizaimin_on_ig_(1)_jpeg.jpg', '$2y$10$5dT6zC2JoLuCS5XnUfa0nuwLTBnTsEJiLcwmG8Fy3pY3DBbzz5aoW', 2, 1, 1757383125),
 (10, 'wendy12', 'wendy12@gmail.com', 'default.jpg', '$2y$10$Ecus7FPh5o9DG7DHkovI8.2I1FG42p1mpXs/XkoKXC8hAcWUNchCK', 2, 1, 1757433991);
 
 -- --------------------------------------------------------
@@ -86,7 +94,10 @@ INSERT INTO `user_access_menu` (`id`, `role_id`, `menu_id`) VALUES
 (7, 1, 5),
 (11, 1, 9),
 (13, 1, 10),
-(17, 1, 12);
+(17, 1, 12),
+(18, 2, 9),
+(19, 2, 10),
+(20, 2, 12);
 
 -- --------------------------------------------------------
 
@@ -127,8 +138,8 @@ CREATE TABLE `user_role` (
 --
 
 INSERT INTO `user_role` (`id`, `role`) VALUES
-(1, 'admin'),
-(2, 'karyawan');
+(1, 'Super Admin'),
+(2, 'Admin');
 
 -- --------------------------------------------------------
 
@@ -156,8 +167,9 @@ INSERT INTO `user_sub_menu` (`id`, `menu_id`, `title`, `url`, `icon`, `is_active
 (7, 5, 'Submenu Management', 'menu/submenu', 'fas fa-fw fa-folder-open', 1),
 (14, 1, 'Role', 'admin/role', 'fas fa-fw fa-user-tie', 1),
 (15, 9, 'Karyawan', 'karyawan', 'fas fa-fw fa-user-tie', 1),
-(16, 10, 'Laporan Karyawan', 'laporan', 'fas fa-fw fa-book', 1),
-(17, 12, 'Absensi Harian', 'absensi/harian', 'fas fa-fw-book', 1);
+(16, 10, 'Laporan Absensi', 'laporan', 'fas fa-calendar-check', 1),
+(17, 12, 'Absensi Harian', 'absensi/harian', 'fas fa-user-check', 1),
+(19, 1, 'Manajemen User', 'admin/manage_user', 'fas fa-fw fa-user', 1);
 
 --
 -- Indexes for dumped tables
@@ -207,19 +219,19 @@ ALTER TABLE `user_sub_menu`
 -- AUTO_INCREMENT for table `karyawan`
 --
 ALTER TABLE `karyawan`
-  MODIFY `id_karyawan` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_karyawan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `user`
 --
 ALTER TABLE `user`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `user_access_menu`
 --
 ALTER TABLE `user_access_menu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `user_menu`
@@ -237,7 +249,7 @@ ALTER TABLE `user_role`
 -- AUTO_INCREMENT for table `user_sub_menu`
 --
 ALTER TABLE `user_sub_menu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

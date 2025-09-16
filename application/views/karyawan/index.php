@@ -2,10 +2,10 @@
     <div class="content">
         <div class="page-inner">
             <div class="page-header">
-                <h4 class="page-title">Profil Administrator</h4>
+                <h4 class="page-title">Data Karyawan</h4>
                 <ul class="breadcrumbs">
                     <li class="nav-home">
-                        <a href="<?= base_url('administrator') ?>">
+                        <a href="<?= base_url('dashboard') ?>">
                             <i class="flaticon-home"></i>
                         </a>
                     </li>
@@ -13,134 +13,174 @@
                         <i class="flaticon-right-arrow"></i>
                     </li>
                     <li class="nav-item">
-                        <a href="#">Profil</a>
+                        <a href="#">Karyawan</a>
                     </li>
                 </ul>
             </div>
+
+            <!-- Flash message -->
+            <?= $this->session->flashdata('message'); ?>
+
             <div class="row">
-                <div class="col-lg-12 col-md-12">
+                <div class="col-md-12">
                     <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h4 class="card-title">Data Karyawan</h4>
-                            <!-- Tombol Tambah Data -->
-                            <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#tambahKaryawan">
-                                <i class="fas fa-plus"></i> Tambah Data
+                        <div class="card-header">
+                            <button class="btn btn-primary" data-toggle="modal" data-target="#tambahKaryawan">
+                                <i class="fas fa-plus"></i> Tambah Karyawan
                             </button>
                         </div>
                         <div class="card-body">
-                            <table class="table table-bordered">
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Nama</th>
-                                        <th>NIP</th>
-                                        <th>Jabatan</th>
-                                        <th>Divisi</th>
-                                        <th>Aksi</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php $no = 1;
-                                    foreach ($karyawan as $k): ?>
+                            <div class="table-responsive">
+                                <table id="basic-datatables" class="display table table-striped table-hover">
+                                    <thead>
                                         <tr>
-                                            <td><?= $no++; ?></td>
-                                            <td><?= $k['nama']; ?></td>
-                                            <td><?= $k['nip']; ?></td>
-                                            <td><?= $k['jabatan']; ?></td>
-                                            <td><?= $k['divisi']; ?></td>
-                                            <td>
-                                                <!-- Tombol Edit -->
-                                                <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editKaryawan<?= $k['id_karyawan']; ?>">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <!-- Tombol Hapus -->
-                                                <a href="<?= base_url('karyawan/hapus/' . $k['id_karyawan']); ?>"
-                                                    class="btn btn-danger btn-sm"
-                                                    onclick="return confirm('Yakin hapus data ini?')">
-                                                    <i class="fas fa-trash"></i>
-                                                </a>
-                                            </td>
+                                            <th>No</th>
+                                            <th>Nama</th>
+                                            <th>NIP</th>
+                                            <th>Tanggal Masuk</th>
+                                            <th>Divisi</th>
+                                            <th>Aksi</th>
                                         </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php $no = 1;
+                                        foreach ($karyawan as $row): ?>
+                                            <tr>
+                                                <td><?= $no++; ?></td>
+                                                <td><?= $row['nama']; ?></td>
+                                                <td><?= $row['nip']; ?></td>
+                                                <td><?= date('d M Y', strtotime($row['tanggal_masuk'])); ?></td>
+                                                <td><?= $row['divisi']; ?></td>
+                                                <td>
+                                                    <!-- Tombol Edit -->
+                                                    <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editKaryawan<?= $row['id_karyawan']; ?>">
+                                                        <i class="fas fa-edit"></i> Edit
+                                                    </button>
+                                                    <!-- Tombol Hapus -->
+                                                    <a href="<?= base_url('karyawan/delete/' . $row['id_karyawan']); ?>"
+                                                        class="btn btn-danger btn-sm"
+                                                        onclick="return confirm('Yakin hapus data ini?');">
+                                                        <i class="fas fa-trash"></i> Hapus
+                                                    </a>
+                                                </td>
+                                            </tr>
 
-                                        <!-- Modal Edit -->
-                                        <div class="modal fade" id="editKaryawan<?= $k['id_karyawan']; ?>" tabindex="-1" role="dialog" aria-hidden="true">
-                                            <div class="modal-dialog" role="document">
-                                                <div class="modal-content">
-                                                    <form action="<?= base_url('karyawan/edit/' . $k['id_karyawan']); ?>" method="post">
-                                                        <div class="modal-header bg-warning text-white">
-                                                            <h5 class="modal-title">Edit Karyawan</h5>
-                                                            <button type="button" class="close" data-dismiss="modal">
-                                                                <span>&times;</span>
-                                                            </button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <div class="form-group">
-                                                                <label>Nama</label>
-                                                                <input type="text" name="nama" class="form-control" value="<?= $k['nama']; ?>" required>
+                                            <!-- Modal Edit -->
+                                            <div class="modal fade" id="editKaryawan<?= $row['id_karyawan']; ?>" tabindex="-1" role="dialog" aria-labelledby="editKaryawanLabel<?= $row['id_karyawan']; ?>" aria-hidden="true">
+                                                <div class="modal-dialog" role="document">
+                                                    <div class="modal-content">
+                                                        <form action="<?= base_url('karyawan/edit/' . $row['id_karyawan']); ?>" method="post">
+                                                            <div class="modal-header">
+                                                                <h5 class="modal-title" id="editKaryawanLabel<?= $row['id_karyawan']; ?>">Edit Karyawan</h5>
+                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                                    <span aria-hidden="true">&times;</span>
+                                                                </button>
                                                             </div>
-                                                            <div class="form-group">
-                                                                <label>NIK</label>
-                                                                <input type="text" name="nik" class="form-control" value="<?= $k['nik']; ?>" required>
+                                                            <div class="modal-body">
+
+                                                                <div class="form-group">
+                                                                    <label for="nama">Nama</label>
+                                                                    <input type="text" class="form-control" name="nama" value="<?= $row['nama']; ?>" required>
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label for="nip">NIP</label>
+                                                                    <input type="number" class="form-control" name="nip" value="<?= $row['nip']; ?>" required>
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label for="tanggal_masuk">Tanggal Masuk</label>
+                                                                    <input type="date" class="form-control" name="tanggal_masuk" value="<?= $row['tanggal_masuk']; ?>" required>
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label for="divisi">Divisi</label>
+                                                                    <select name="divisi" class="form-control" required>
+                                                                        <option value="Sekretariat" <?= $row['divisi'] == 'Sekretariat' ? 'selected' : ''; ?>>Sekretariat</option>
+                                                                        <option value="Rehabsos" <?= $row['divisi'] == 'Rehabsos' ? 'selected' : ''; ?>>Rehabsos</option>
+                                                                        <option value="Dayasos" <?= $row['divisi'] == 'Dayasos' ? 'selected' : ''; ?>>Dayasos</option>
+                                                                        <option value="Linjamsos" <?= $row['divisi'] == 'Linjamsos' ? 'selected' : ''; ?>>Linjamsos</option>
+                                                                    </select>
+                                                                </div>
+
                                                             </div>
-                                                            <div class="form-group">
-                                                                <label>Jabatan</label>
-                                                                <input type="text" name="jabatan" class="form-control" value="<?= $k['jabatan']; ?>" required>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-danger" data-dismiss="modal">
+                                                                    <i class="fas fa-times mr-2"></i>Batal
+                                                                </button>
+                                                                <button type="submit" class="btn btn-primary">
+                                                                    <i class="fas fa-save mr-2"></i>Update
+                                                                </button>
                                                             </div>
-                                                            <div class="form-group">
-                                                                <label>Divisi</label>
-                                                                <input type="text" name="divisi" class="form-control" value="<?= $k['divisi']; ?>" required>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                                            <button type="submit" class="btn btn-warning">Simpan Perubahan</button>
-                                                        </div>
-                                                    </form>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
+                                            <!-- End Modal Edit -->
+
+                                        <?php endforeach; ?>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
+            <!-- Modal Tambah Karyawan -->
+            <div class="modal fade" id="tambahKaryawan" tabindex="-1" role="dialog" aria-labelledby="tambahKaryawanLabel" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <form action="<?= base_url('karyawan/add'); ?>" method="post">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="tambahKaryawanLabel">Tambah Karyawan</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
 
-                <!-- Modal Tambah -->
-                <div class="modal fade" id="tambahKaryawan" tabindex="-1" role="dialog" aria-hidden="true">
-                    <div class="modal-dialog" role="document">
-                        <div class="modal-content">
-                            <form action="<?= base_url('karyawan/tambah'); ?>" method="post">
-                                <div class="modal-header bg-primary text-white">
-                                    <h5 class="modal-title">Tambah Karyawan</h5>
-                                    <button type="button" class="close" data-dismiss="modal">
-                                        <span>&times;</span>
-                                    </button>
+                                <div class="form-group">
+                                    <label for="nama">Nama</label>
+                                    <input type="text" class="form-control" name="nama" required>
                                 </div>
-                                <div class="modal-body">
-                                    <div class="form-group">
-                                        <label>Nama</label>
-                                        <input type="text" name="nama" class="form-control" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>NIK</label>
-                                        <input type="text" name="nik" class="form-control" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Jabatan</label>
-                                        <input type="text" name="jabatan" class="form-control" required>
-                                    </div>
-                                    <div class="form-group">
-                                        <label>Divisi</label>
-                                        <input type="text" name="divisi" class="form-control" required>
-                                    </div>
+
+                                <div class="form-group">
+                                    <label for="nip">NIP</label>
+                                    <input type="number" class="form-control" name="nip" required>
                                 </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                    <button type="submit" class="btn btn-primary">Tambah</button>
+
+                                <div class="form-group">
+                                    <label for="tanggal_masuk">Tanggal Masuk</label>
+                                    <input type="date" class="form-control" name="tanggal_masuk" required>
                                 </div>
-                            </form>
-                        </div>
+
+                                <div class="form-group">
+                                    <label for="divisi">Divisi</label>
+                                    <select name="divisi" class="form-control" required>
+                                        <option value="">-- Pilih Divisi --</option>
+                                        <option value="Sekretariat">Sekretariat</option>
+                                        <option value="Rehabsos">Rehabsos</option>
+                                        <option value="Dayasos">Dayasos</option>
+                                        <option value="Linjamsos">Linjamsos</option>
+                                    </select>
+                                </div>
+
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">
+                                    <i class="fas fa-times mr-2"></i>Batal
+                                </button>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-2"></i>Simpan
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
+            </div>
+            <!-- End Modal Tambah -->
+
+        </div>
+    </div>
+</div>

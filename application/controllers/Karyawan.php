@@ -3,18 +3,22 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Karyawan extends CI_Controller
 {
+
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('Karyawan_model', 'karyawan');
-        $this->load->library('form_validation'); // <-- Tambahkan ini
+        //is_logged_in(); // helper login
+        $this->load->model('Karyawan_model');
     }
 
     public function index()
     {
         $data['title'] = 'Data Karyawan';
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-        $data['karyawan'] = $this->karyawan->getAll();
+        $data['user'] = $this->db->get_where(
+            'user',
+            ['email' => $this->session->userdata('email')]
+        )->row_array();
+        $data['karyawan'] = $this->Karyawan_model->getAll();
 
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
@@ -23,55 +27,56 @@ class Karyawan extends CI_Controller
         $this->load->view('template/footer');
     }
 
-    public function tambah()
+    public function add()
     {
-        // Aturan validasi
-        $this->form_validation->set_rules('nama', 'Nama', 'required|trim|min_length[3]');
-        $this->form_validation->set_rules('nik', 'NIK', 'required|trim|is_unique[karyawan.nik]', [
-            'is_unique' => 'NIK sudah terdaftar!'
-        ]);
-        $this->form_validation->set_rules('jabatan', 'Jabatan', 'required|trim');
-        $this->form_validation->set_rules('divisi', 'Divisi', 'required|trim');
+        $nip = $this->input->post('nip', true);
 
-        if ($this->form_validation->run() == false) {
-            // Jika gagal validasi, balik ke halaman index
-            $this->index();
-        } else {
-            $data = [
-                'nama'    => $this->input->post('nama'),
-                'nik'     => $this->input->post('nik'),
-                'jabatan' => $this->input->post('jabatan'),
-                'divisi'  => $this->input->post('divisi'),
-            ];
-
-            $this->karyawan->insert($data);
-            $this->session->set_flashdata('message', '<div class="alert alert-success">Data karyawan berhasil ditambahkan!</div>');
+        // cek apakah nip sudah ada
+        $cek = $this->db->get_where('karyawan', ['nip' => $nip])->row_array();
+        if ($cek) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger">NIP sudah terdaftar, gunakan NIP lain!</div>');
             redirect('karyawan');
         }
+
+        $data = [
+            'nama' => $this->input->post('nama', true),
+            'nip' => $this->input->post('nip', true),
+            'tanggal_masuk' => $this->input->post('tanggal_masuk', true),
+            'divisi' => $this->input->post('divisi', true),
+        ];
+
+        $this->Karyawan_model->insert($data);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Karyawan berhasil ditambahkan!</div>');
+        redirect('karyawan');
     }
 
     public function edit($id)
     {
-        // Aturan validasi
-        $this->form_validation->set_rules('nama', 'Nama', 'required|trim|min_length[3]');
-        $this->form_validation->set_rules('nik', 'NIK', 'required|trim');
-        $this->form_validation->set_rules('jabatan', 'Jabatan', 'required|trim');
-        $this->form_validation->set_rules('divisi', 'Divisi', 'required|trim');
+        $nip = $this->input->post('nip', true);
 
-        if ($this->form_validation->run() == false) {
-            // Jika gagal validasi, balik ke halaman index
-            $this->index();
-        } else {
-            $data = [
-                'nama'    => $this->input->post('nama'),
-                'nik'     => $this->input->post('nik'),
-                'jabatan' => $this->input->post('jabatan'),
-                'divisi'  => $this->input->post('divisi'),
-            ];
-
-            $this->karyawan->update($id, $data);
-            $this->session->set_flashdata('message', '<div class="alert alert-success">Data karyawan berhasil diupdate!</div>');
+        // cek nip, tapi abaikan nip milik dirinya sendiri
+        $cek = $this->db->get_where('karyawan', ['nip' => $nip, 'id_karyawan !=' => $id])->row_array();
+        if ($cek) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger">NIP sudah digunakan karyawan lain!</div>');
             redirect('karyawan');
         }
+        
+        $data = [
+            'nama' => $this->input->post('nama', true),
+            'nip' => $this->input->post('nip', true),
+            'tanggal_masuk' => $this->input->post('tanggal_masuk', true),
+            'divisi' => $this->input->post('divisi', true),
+        ];
+
+        $this->Karyawan_model->update($id, $data);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Karyawan berhasil diperbarui!</div>');
+        redirect('karyawan');
+    }
+
+    public function delete($id)
+    {
+        $this->Karyawan_model->delete($id);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Karyawan berhasil dihapus!</div>');
+        redirect('karyawan');
     }
 }
