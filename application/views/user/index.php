@@ -36,8 +36,11 @@
                                 </tr>
                                 <tr>
                                     <th>Role</th>
-                                    <td><?= $user['role_id']; ?></td>
+                                    <td>
+                                        <?= ($user['role_id'] == 1) ? 'Super Admin' : 'Admin'; ?>
+                                    </td>
                                 </tr>
+
                                 <tr>
                                     <th>Date Created</th>
                                     <td><?= date('d M Y', $user['date_created']); ?></td>
