@@ -29,4 +29,21 @@ class Karyawan_model extends CI_Model
     {
         return $this->db->delete('karyawan', ['id_karyawan' => $id]);
     }
+    public function countAll($keyword = null)
+    {
+        if ($keyword) {
+            $this->db->like('nama', $keyword);
+            $this->db->or_like('nip', $keyword);
+        }
+        return $this->db->count_all_results('karyawan');
+    }
+
+    public function getData($limit, $start, $keyword = null)
+    {
+        if ($keyword) {
+            $this->db->like('nama', $keyword);
+            $this->db->or_like('nip', $keyword);
+        }
+        return $this->db->get('karyawan', $limit, $start)->result_array();
+    }
 }

@@ -25,6 +25,16 @@
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-header">
+                            <form action="<?= base_url('karyawan/index'); ?>" method="get" class="form-inline">
+                                <input type="text" name="keyword" class="form-control mr-2"
+                                    placeholder="Cari Nama / NIP" value="<?= $keyword; ?>">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                                <a href="<?= base_url('karyawan'); ?>" class="btn btn-secondary ml-2">
+                                    <i class="fas fa-sync"></i> Reset
+                                </a>
+                            </form>
                             <button class="btn btn-primary" data-toggle="modal" data-target="#tambahKaryawan">
                                 <i class="fas fa-plus"></i> Tambah Karyawan
                             </button>
@@ -180,6 +190,9 @@
                 </div>
             </div>
             <!-- End Modal Tambah -->
+            <div class="card-footer">
+                <?= $pagination; ?>
+            </div>
 
         </div>
     </div>

@@ -69,6 +69,42 @@ class Menu extends CI_Controller
         }
     }
 
+    public function editSubmenu($id)
+    {
+        $this->form_validation->set_rules('title', 'Title', 'required');
+        $this->form_validation->set_rules('menu_id', 'Menu', 'required');
+        $this->form_validation->set_rules('url', 'URL', 'required');
+        $this->form_validation->set_rules('icon', 'Icon', 'required');
+
+        if ($this->form_validation->run() == false) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">
+        Gagal update submenu!</div>');
+        } else {
+            $updateData = [
+                'title' => $this->input->post('title'),
+                'menu_id' => $this->input->post('menu_id'),
+                'url' => $this->input->post('url'),
+                'icon' => $this->input->post('icon'),
+                'is_active' => $this->input->post('is_active') ? 1 : 0
+            ];
+            $this->db->where('id', $id);
+            $this->db->update('user_sub_menu', $updateData);
+
+            $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">
+        Submenu berhasil diupdate!</div>');
+        }
+        redirect('menu/submenu');
+    }
+
+    public function deleteSubmenu($id)
+    {
+        $this->db->where('id', $id);
+        $this->db->delete('user_sub_menu');
+        $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">
+    Submenu berhasil dihapus!</div>');
+        redirect('menu/submenu');
+    }
+
     public function edit_menu($id)
     {
         $data['title'] = "Edit Menu Management";
