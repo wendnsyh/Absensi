@@ -19,46 +19,101 @@
             </div>
 
             <div class="row">
-                <div class="col-lg-6 col-md-12">
+                <div class="col-md-12">
+
+                    <?php if ($this->session->flashdata('success')): ?>
+                        <?= $this->session->flashdata('success'); ?>
+                    <?php endif; ?>
+                    <?php if ($this->session->flashdata('error')): ?>
+                        <?= $this->session->flashdata('error'); ?>
+                    <?php endif; ?>
+
                     <div class="card">
                         <div class="card-header">
-                            <div class="card-title">Detail Profil</div>
+                            <div class="card-title">Edit Profil</div>
                         </div>
-                        <div class="card-body">
-                            <table class="table table-bordered">
-                                <tr>
-                                    <th width="30%">Nama</th>
-                                    <td><?= $user['name']; ?></td>
-                                </tr>
-                                <tr>
-                                    <th>Email</th>
-                                    <td><?= $user['email']; ?></td>
-                                </tr>
-                                <tr>
-                                    <th>Role</th>
-                                    <td>
-                                        <?= ($user['role_id'] == 1) ? 'Super Admin' : 'Admin'; ?>
-                                    </td>
-                                </tr>
+                        <form action="<?= base_url('user/update'); ?>" method="POST" enctype="multipart/form-data">
+                            <div class="card-body">
+                                <div class="row">
 
-                                <tr>
-                                    <th>Date Created</th>
-                                    <td><?= date('d M Y', $user['date_created']); ?></td>
-                                </tr>
-                            </table>
-                        </div>
-                        <div class="card-footer text-right">
-                            <a href="<?= base_url('user/edit'); ?>" class="btn btn-primary">
-                                <i class="fas fa-user-edit mr-2"></i>Edit Profil
-                            </a>
-                            <a href="<?= base_url('user/ubah_password'); ?>" class="btn btn-primary">
-                                <i class="fas fa-unlock-alt mr-2"></i> Ubah Password
-                            </a>
-                        </div>
+                                    <!-- FOTO PROFIL -->
+                                    <div class="col-md-4">
+                                        <div class="text-center mb-3">
+                                            <div class="avatar avatar-xxl">
+                                                <img src="<?= base_url('assets/img/profile/' . $user['image']); ?>"
+                                                    alt="Foto Profil"
+                                                    class="avatar-img rounded-circle"
+                                                    style="width:150px;height:150px;object-fit:cover;">
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <input type="file" name="image" class="form-control">
+                                            <small class="form-text text-muted">Kosongkan jika tidak ingin mengubah foto.</small>
+                                        </div>
+                                    </div>
+
+                                    <!-- DATA PROFIL -->
+                                    <div class="col-md-8">
+                                        <div class="row">
+
+                                            <!-- NAMA -->
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="name">Nama Lengkap</label>
+                                                    <input type="text"
+                                                        class="form-control <?= ($user['role_id'] == 1) ? 'bg-dark text-white font-weight-bold' : '' ?>"
+                                                        name="name"
+                                                        value="<?= $user['name']; ?>"
+                                                        <?= ($user['role_id'] == 1) ? 'readonly' : '' ?>>
+                                                </div>
+                                            </div>
+
+                                            <!-- EMAIL -->
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="email">Email</label>
+                                                    <input type="email"
+                                                        class="form-control <?= ($user['role_id'] == 1) ? 'bg-dark text-white font-weight-bold' : '' ?>"
+                                                        name="email"
+                                                        value="<?= $user['email']; ?>"
+                                                        <?= ($user['role_id'] == 1) ? 'readonly' : '' ?>>
+                                                </div>
+                                            </div>
+
+                                            <!-- PASSWORD BARU -->
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="password_baru">Password Baru</label>
+                                                    <input type="password" class="form-control" name="password_baru">
+                                                    <small class="form-text text-muted">Kosongkan jika tidak ingin mengubah password.</small>
+                                                </div>
+                                            </div>
+
+                                            <!-- KONFIRMASI PASSWORD -->
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="konfirmasi_password">Konfirmasi Password Baru</label>
+                                                    <input type="password" class="form-control" name="konfirmasi_password">
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <!-- BUTTON -->
+                            <div class="card-action text-right">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-2"></i> Simpan Perubahan
+                                </button>
+                            </div>
+                        </form>
                     </div>
+
                 </div>
             </div>
-
         </div>
     </div>
 </div>

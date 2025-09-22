@@ -32,7 +32,7 @@
                             <?= form_error('new_password1', '<small class="text-danger pl-3">', '</small>'); ?>
                         </div>
                         <div class="form-group">
-                            <label for="new_password2">Ulangi Passowrd Baru</label>
+                            <label for="new_password2">Ulangi Password Baru</label>
                             <input type="password" class="form-control" id="new_password2" name="new_password2">
                             <?= form_error('new_password2', '<small class="text-danger pl-3">', '</small>'); ?>
                         </div>

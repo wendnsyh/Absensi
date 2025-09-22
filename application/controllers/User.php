@@ -1,4 +1,5 @@
 <?php
+defined('BASEPATH') OR exit('No direct script access allowed');
 
 class User extends CI_Controller
 {
@@ -8,43 +9,41 @@ class User extends CI_Controller
         is_logged_in();
     }
 
-
     public function index()
     {
-
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-        $data['title'] = "My Profile";
+        $data['user'] = $this->db->get_where(
+            'user',
+            ['email' => $this->session->userdata('email')]
+        )->row_array();
+        $data['title'] = "Profil Saya";
 
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('template/topbar', $data);
-        $this->load->view('user/index', $data);
+        $this->load->view('user/index', $data); 
         $this->load->view('template/footer');
     }
 
-
-    public function edit()
+    public function update()
     {
-        $data['user'] = $this->db->get_where('user', [
-            'email' => $this->session->userdata('email')
-        ])->row_array();
-        $data['title'] = "Edit Profile";
+        $data['user'] = $this->db->get_where(
+            'user',
+            ['email' => $this->session->userdata('email')]
+        )->row_array();
 
+        $name  = $this->input->post('name');
+        $email = $this->input->post('email');
+        $password_baru       = $this->input->post('password_baru');
+        $konfirmasi_password = $this->input->post('konfirmasi_password');
+
+        // validasi
         $this->form_validation->set_rules('name', 'Nama', 'required|trim');
         $this->form_validation->set_rules('email', 'Email', 'required|trim|valid_email');
 
         if ($this->form_validation->run() == false) {
-            // tampilkan form edit
-            $this->load->view('template/header', $data);
-            $this->load->view('template/sidebar', $data);
-            $this->load->view('template/topbar', $data);
-            $this->load->view('user/edit', $data);
-            $this->load->view('template/footer');
+            $this->index();
         } else {
-            $name  = $this->input->post('name');
-            $email = $this->input->post('email');
-
-            // cek kalau ada upload gambar
+            // Upload Foto jika ada
             $upload_image = $_FILES['image']['name'];
             if ($upload_image) {
                 $config['allowed_types'] = 'jpg|jpeg|png';
@@ -54,7 +53,6 @@ class User extends CI_Controller
                 $this->load->library('upload', $config);
 
                 if ($this->upload->do_upload('image')) {
-                    // hapus foto lama kalau bukan default
                     $old_image = $data['user']['image'];
                     if ($old_image != 'default.png') {
                         unlink(FCPATH . 'assets/img/profile/' . $old_image);
@@ -62,43 +60,34 @@ class User extends CI_Controller
                     $new_image = $this->upload->data('file_name');
                     $this->db->set('image', $new_image);
                 } else {
-                    echo $this->upload->display_errors();
+                    $this->session->set_flashdata('error', $this->upload->display_errors());
+                    redirect('user');
                 }
             }
 
+            // Update data dasar
             $this->db->set('name', $name);
             $this->db->set('email', $email);
+
+            // Update password jika diisi
+            if (!empty($password_baru)) {
+                if ($password_baru === $konfirmasi_password) {
+                    $this->db->set('password', password_hash($password_baru, PASSWORD_DEFAULT));
+                } else {
+                    $this->session->set_flashdata('error', '
+                        <div class="alert alert-danger">Konfirmasi password tidak sesuai!</div>
+                    ');
+                    redirect('user');
+                }
+            }
+
             $this->db->where('id', $data['user']['id']);
             $this->db->update('user');
 
-            $this->session->set_flashdata('message', '
-            <div class="text-success font-weight-bold alert alert-success alert-dismissible fade show" role="alert">
-                Profil berhasil diperbarui!
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        ');
-            redirect('user/edit');
-        }
-    }
-
-    public function ubah_password()
-    {
-
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-        $data['title'] = "Ubah Password";
-
-        $this->form_validation->set_rules('current_password', 'Password Saat Ini', 'required|trim');
-        $this->form_validation->set_rules('new_password1', ' Password Baru', 'required|trim|min_lenght[6]|matches[new_password2]');
-        $this->form_validation->set_rules('new_password2', 'Konfirmasi Password', 'required|trim|min_lenght[6]|matches[new_password1]');
-
-        if ($this->form_validation->run() == false) {
-            $this->load->view('template/header', $data);
-            $this->load->view('template/sidebar', $data);
-            $this->load->view('template/topbar', $data);
-            $this->load->view('user/ubah_password', $data);
-            $this->load->view('template/footer');
+            $this->session->set_flashdata('success', '
+                <div class="alert alert-success">Profil berhasil diperbarui!</div>
+            ');
+            redirect('user');
         }
     }
 }
