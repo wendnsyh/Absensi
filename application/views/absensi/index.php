@@ -33,6 +33,23 @@
                     </button>
                 </div>
                 <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6 ml-auto">
+                            <form action="<?= base_url('absensi'); ?>" method="get">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" placeholder="Cari Nama atau NIP" name="keyword" value="<?= html_escape($this->input->get('keyword')) ?>">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-primary mr-2" type="submit">
+                                            <i class="flaticon-search-1"></i> Cari
+                                        </button>
+                                        <a href="<?= base_url('absensi'); ?>" class="btn btn-secondary">
+                                            <i class="fas fa-sync-alt"></i> Reset
+                                        </a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                     <div class="table-responsive">
                         <table class="display table table-striped table-hover">
                             <thead>
@@ -42,92 +59,70 @@
                                     <th>NIP</th>
                                     <th>Tanggal</th>
                                     <th>Status</th>
-                                    <th>Keterangan</th>
+                                    <th>Total Telat</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php $no = 1; foreach ($absensi as $row): ?>
+                                <?php if (empty($absensi)): ?>
                                     <tr>
-                                        <td><?= $no++; ?></td>
-                                        <td><?= $row['nama']; ?></td>
-                                        <td><?= $row['nip']; ?></td>
-                                        <td><?= date('d M Y', strtotime($row['tanggal'])); ?></td>
-                                        <td><?= $row['status']; ?></td>
-                                        <td><?= $row['keterangan']; ?></td>
-                                        <td>
-                                            <a href="<?= base_url('absensi/delete/'.$row['id_absensi']); ?>" 
-                                               class="btn btn-danger btn-sm" 
-                                               onclick="return confirm('Yakin hapus data ini?');">
-                                               <i class="fas fa-trash"></i> Hapus
-                                            </a>
-                                        </td>
+                                        <td colspan="7" class="text-center">Data tidak ditemukan.</td>
                                     </tr>
-                                <?php endforeach; ?>
+                                <?php else: ?>
+                                    <?php $no = $start + 1; // Penomoran dimulai dari offset yang benar
+                                    foreach ($absensi as $row): ?>
+                                        <tr>
+                                            <td><?= $no++; ?></td>
+                                            <td><?= $row['nama']; ?></td>
+                                            <td><?= $row['nip']; ?></td>
+                                            <td><?= date('d M Y', strtotime($row['tanggal'])); ?></td>
+                                            <td>
+                                                <?php
+                                                if ($row['hadir'] == 1) echo 'Hadir';
+                                                else if ($row['sakit'] == 1) echo 'Sakit';
+                                                else if ($row['izin'] == 1) echo 'Izin';
+                                                else if ($row['alfa'] == 1) echo 'Alfa';
+                                                else if ($row['cuti'] == 1) echo 'Cuti';
+                                                else if ($row['dinas_luar'] == 1) echo 'Dinas Luar';
+                                                ?>
+                                            </td>
+                                            <td>
+                                                <?php
+                                                $total_telat = $row['terlambat_kurang_30'] + $row['terlambat_30_90'] + $row['terlambat_lebih_90'];
+                                                $total_tidak_finger = $row['tidak_finger_masuk'] + $row['tidak_finger_pulang'];
+
+                                                if ($total_telat > 0 && $total_tidak_finger > 0) {
+                                                    echo 'Total Telat: ' . $total_telat . 'x, Tidak Finger: ' . $total_tidak_finger . 'x';
+                                                } else if ($total_telat > 0) {
+                                                    echo 'Total Telat: ' . $total_telat . 'x';
+                                                } else if ($total_tidak_finger > 0) {
+                                                    echo 'Tidak Finger: ' . $total_tidak_finger . 'x';
+                                                } else {
+                                                    echo '-';
+                                                }
+                                                ?>
+                                            </td>
+                                            <td>
+                                                <a href="<?= base_url('absensi/detail/' . $row['id']); ?>" class="btn btn-info btn-sm">
+                                                    <i class="fas fa-eye"></i> Detail
+                                                </a>
+                                                <a href="<?= base_url('absensi/delete/' . $row['id']); ?>"
+                                                    class="btn btn-danger btn-sm"
+                                                    onclick="return confirm('Yakin hapus data ini?');">
+                                                    <i class="fas fa-trash"></i> Hapus
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
                 </div>
-            </div>
-
-            <!-- Modal Tambah Absensi -->
-            <div class="modal fade" id="tambahAbsensi" tabindex="-1" role="dialog" aria-labelledby="tambahAbsensiLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <form action="<?= base_url('absensi/add'); ?>" method="post">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Tambah Absensi</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-
-                                <div class="form-group">
-                                    <label>Karyawan</label>
-                                    <select name="id_karyawan" class="form-control" required>
-                                        <option value="">-- Pilih Karyawan --</option>
-                                        <?php foreach ($karyawan as $k): ?>
-                                            <option value="<?= $k['id_karyawan']; ?>"><?= $k['nama'].' - '.$k['nip']; ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Tanggal</label>
-                                    <input type="date" class="form-control" name="tanggal" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Status</label>
-                                    <select name="status" class="form-control" required>
-                                        <option value="Hadir">Hadir</option>
-                                        <option value="Izin">Izin</option>
-                                        <option value="Sakit">Sakit</option>
-                                        <option value="Alpha">Alpha</option>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Keterangan</label>
-                                    <input type="text" class="form-control" name="keterangan">
-                                </div>
-
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">
-                                    <i class="fas fa-times"></i> Batal
-                                </button>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Simpan
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                <div class="card-footer d-flex justify-content-end">
+                    <?= $this->pagination->create_links(); ?>
                 </div>
             </div>
-            <!-- End Modal -->
-
         </div>
     </div>
 </div>

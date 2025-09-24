@@ -1,14 +1,13 @@
 -- phpMyAdmin SQL Dump
--- version 4.9.2
+-- version 5.1.1
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 16, 2025 at 05:48 PM
--- Server version: 10.4.10-MariaDB
--- PHP Version: 7.1.33
+-- Generation Time: Sep 24, 2025 at 08:30 AM
+-- Server version: 10.4.22-MariaDB
+-- PHP Version: 7.3.33
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
-SET AUTOCOMMIT = 0;
 START TRANSACTION;
 SET time_zone = "+00:00";
 
@@ -25,24 +24,99 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Table structure for table `karyawan`
+-- Table structure for table `absensi`
 --
 
-CREATE TABLE `karyawan` (
-  `id_karyawan` int(11) NOT NULL,
-  `nama` varchar(255) NOT NULL,
-  `nip` varchar(50) NOT NULL,
-  `tanggal_masuk` date NOT NULL,
-  `divisi` varchar(100) NOT NULL
+CREATE TABLE `absensi` (
+  `id` int(11) NOT NULL,
+  `no` int(11) NOT NULL,
+  `nama` varchar(100) NOT NULL,
+  `nip` varchar(20) NOT NULL,
+  `tanggal` date NOT NULL,
+  `hadir` tinyint(1) DEFAULT 0 COMMENT '1=Hadir, 0=Tidak',
+  `sakit` tinyint(1) DEFAULT 0 COMMENT '1=Sakit, 0=Tidak',
+  `izin` tinyint(1) DEFAULT 0 COMMENT '1=Izin, 0=Tidak',
+  `alfa` tinyint(1) DEFAULT 0 COMMENT '1=Alfa, 0=Tidak',
+  `dinas_luar` tinyint(1) DEFAULT 0 COMMENT '1=Dinas Luar, 0=Tidak',
+  `cuti` tinyint(1) DEFAULT 0 COMMENT '1=Cuti, 0=Tidak',
+  `terlambat_kurang_30` int(11) DEFAULT 0,
+  `terlambat_30_90` int(11) DEFAULT 0,
+  `terlambat_lebih_90` int(11) DEFAULT 0,
+  `tidak_finger_masuk` int(11) DEFAULT 0,
+  `tidak_finger_pulang` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 --
--- Dumping data for table `karyawan`
+-- Dumping data for table `absensi`
 --
 
-INSERT INTO `karyawan` (`id_karyawan`, `nama`, `nip`, `tanggal_masuk`, `divisi`) VALUES
-(3, 'Muhammad Wendy', '121', '2025-09-12', 'Sekretariat'),
-(4, 'Muhammad Wendy', '1211212121121', '2025-10-03', 'Linjamsos');
+INSERT INTO `absensi` (`id`, `no`, `nama`, `nip`, `tanggal`, `hadir`, `sakit`, `izin`, `alfa`, `dinas_luar`, `cuti`, `terlambat_kurang_30`, `terlambat_30_90`, `terlambat_lebih_90`, `tidak_finger_masuk`, `tidak_finger_pulang`) VALUES
+(17, 0, 'NAMA', 'NIP', '1970-01-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+(18, 0, 'Wendy', '12345', '1970-01-01', 0, 1, 1, 1, 1, 1, 11, 0, 0, 0, 0),
+(19, 0, 'Najdah', '54321', '1970-01-01', 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+(20, 0, 'Lorenza', '121212', '1970-01-01', 0, 1, 2, 3, 2, 4, 6, 10, 1, 3, 0),
+(21, 0, 'NAMA', 'NIP', '1970-01-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+(22, 0, 'Wendy', '12345', '1970-01-01', 0, 1, 1, 1, 1, 1, 11, 0, 0, 0, 0),
+(23, 0, 'Najdah', '54321', '1970-01-01', 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+(24, 0, 'Lorenza', '121212', '1970-01-01', 0, 1, 2, 3, 2, 4, 6, 10, 1, 3, 0),
+(25, 0, 'NAMA', 'NIP', '1970-01-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+(26, 0, 'Wendy', '12345', '1970-01-01', 0, 1, 1, 1, 1, 1, 11, 0, 0, 0, 0),
+(27, 0, 'Najdah', '54321', '1970-01-01', 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+(28, 0, 'Lorenza', '121212', '1970-01-01', 0, 1, 2, 3, 2, 4, 6, 10, 1, 3, 0),
+(29, 0, 'NAMA', 'NIP', '1970-01-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+(30, 0, 'Wendy', '12345', '1970-01-01', 0, 1, 1, 1, 1, 1, 11, 0, 0, 0, 0),
+(31, 0, 'Najdah', '54321', '1970-01-01', 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+(32, 0, 'Lorenza', '121212', '1970-01-01', 0, 1, 2, 3, 2, 4, 6, 10, 1, 3, 0),
+(33, 0, 'NAMA', 'NIP', '1970-01-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+(34, 0, 'Wendy', '12345', '1970-01-01', 0, 1, 1, 1, 1, 1, 11, 0, 0, 0, 0),
+(35, 0, 'Najdah', '54321', '1970-01-01', 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+(36, 0, 'Lorenza', '121212', '1970-01-01', 0, 1, 2, 3, 2, 4, 6, 10, 1, 3, 0),
+(37, 0, 'NAMA', 'NIP', '1970-01-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+(38, 0, 'Wendy', '12345', '1970-01-01', 0, 1, 1, 1, 1, 1, 11, 0, 0, 0, 0),
+(39, 0, 'Najdah', '54321', '1970-01-01', 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+(40, 0, 'Lorenza', '121212', '1970-01-01', 0, 1, 2, 3, 2, 4, 6, 10, 1, 3, 0),
+(41, 0, 'NAMA', 'NIP', '1970-01-01', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+(42, 0, 'Wendy', '12345', '1970-01-01', 0, 1, 1, 1, 1, 1, 11, 0, 0, 0, 0),
+(43, 0, 'Najdah', '54321', '1970-01-01', 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+(44, 0, 'Lorenza', '121212', '1970-01-01', 0, 1, 2, 3, 2, 4, 6, 10, 1, 3, 0);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pegawai`
+--
+
+CREATE TABLE `pegawai` (
+  `id` int(11) NOT NULL,
+  `nip` varchar(20) NOT NULL,
+  `nama` varchar(100) NOT NULL,
+  `gaji_pokok` decimal(10,2) DEFAULT 0.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `rekap_absensi`
+--
+
+CREATE TABLE `rekap_absensi` (
+  `id` int(11) NOT NULL,
+  `nip` varchar(20) NOT NULL,
+  `nama` varchar(100) NOT NULL,
+  `bulan` int(2) NOT NULL,
+  `tahun` int(4) NOT NULL,
+  `hadir` int(11) DEFAULT 0,
+  `sakit` int(11) DEFAULT 0,
+  `izin` int(11) DEFAULT 0,
+  `alfa` int(11) DEFAULT 0,
+  `dinas_luar` int(11) DEFAULT 0,
+  `telat_kurang_30` int(11) DEFAULT 0,
+  `telat_30_90` int(11) DEFAULT 0,
+  `telat_lebih_90` int(11) DEFAULT 0,
+  `finger_tidak_lengkap` int(11) DEFAULT 0,
+  `total_gaji` decimal(10,2) DEFAULT 0.00,
+  `potongan_total` decimal(10,2) DEFAULT 0.00
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- --------------------------------------------------------
 
@@ -66,7 +140,7 @@ CREATE TABLE `user` (
 --
 
 INSERT INTO `user` (`id`, `name`, `email`, `image`, `password`, `role_id`, `is_active`, `date_created`) VALUES
-(5, 'Super Admin', 'superadmin@gmail.com', 'wp7153965.jpg', '$2y$10$gOUmr/zVsc3HhaCa3Jxz1uIC5IOF6QtIEiBeAcrogU1ThW2xnzweW', 1, 1, 1751614988),
+(5, 'Super Admin', 'superadmin@gmail.com', 'WhatsApp_Image_2025-09-23_at_08_13_03_fd9f64b0.jpg', '$2y$10$gOUmr/zVsc3HhaCa3Jxz1uIC5IOF6QtIEiBeAcrogU1ThW2xnzweW', 1, 1, 1751614988),
 (6, 'Pria', '19220300@bsi.ac.id', 'default.jpg', '$2y$10$vZAvNMhdNBJ/WXz47FTUa.stGqRLEfxApXmufTJpMJzmOT8JHIm7.', 2, 1, 1751622872),
 (9, 'Muhammad Wendy', 'wendy.diansyah94@gmail.com', 'Cr__@fahrizaimin_on_ig_(1)_jpeg.jpg', '$2y$10$5dT6zC2JoLuCS5XnUfa0nuwLTBnTsEJiLcwmG8Fy3pY3DBbzz5aoW', 2, 1, 1757383125),
 (10, 'wendy12', 'wendy12@gmail.com', 'default.jpg', '$2y$10$Ecus7FPh5o9DG7DHkovI8.2I1FG42p1mpXs/XkoKXC8hAcWUNchCK', 2, 1, 1757433991);
@@ -165,21 +239,35 @@ INSERT INTO `user_sub_menu` (`id`, `menu_id`, `title`, `url`, `icon`, `is_active
 (3, 2, 'My Profile', 'user', 'fas fa-fw fa-user', 1),
 (5, 5, 'Menu Management', 'menu', 'fas fa-fw fa-folder', 1),
 (7, 5, 'Submenu Management', 'menu/submenu', 'fas fa-fw fa-folder-open', 1),
-(14, 1, 'Role', 'admin/role', 'fas fa-fw fa-user-tie', 1),
+(14, 1, 'Role', 'admin/role', 'fas fa-fw fa-wrench', 1),
 (15, 9, 'Karyawan', 'karyawan', 'fas fa-fw fa-user-tie', 1),
-(16, 10, 'Laporan Absensi', 'laporan', 'fas fa-calendar-check', 1),
-(17, 12, 'Absensi Harian', 'absensi/harian', 'fas fa-user-check', 1),
-(19, 1, 'Manajemen User', 'admin/manage_user', 'fas fa-fw fa-user', 1);
+(17, 12, 'Absensi Harian', 'absensi', 'fas fa-user-check', 1),
+(19, 1, 'Manajemen User', 'admin/manage_user', 'fas fa-fw fa-users', 1);
 
 --
 -- Indexes for dumped tables
 --
 
 --
--- Indexes for table `karyawan`
+-- Indexes for table `absensi`
 --
-ALTER TABLE `karyawan`
-  ADD PRIMARY KEY (`id_karyawan`);
+ALTER TABLE `absensi`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `nip` (`nip`);
+
+--
+-- Indexes for table `pegawai`
+--
+ALTER TABLE `pegawai`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nip` (`nip`);
+
+--
+-- Indexes for table `rekap_absensi`
+--
+ALTER TABLE `rekap_absensi`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `nip_bulan_tahun` (`nip`,`bulan`,`tahun`);
 
 --
 -- Indexes for table `user`
@@ -216,10 +304,22 @@ ALTER TABLE `user_sub_menu`
 --
 
 --
--- AUTO_INCREMENT for table `karyawan`
+-- AUTO_INCREMENT for table `absensi`
 --
-ALTER TABLE `karyawan`
-  MODIFY `id_karyawan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+ALTER TABLE `absensi`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+
+--
+-- AUTO_INCREMENT for table `pegawai`
+--
+ALTER TABLE `pegawai`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `rekap_absensi`
+--
+ALTER TABLE `rekap_absensi`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `user`
