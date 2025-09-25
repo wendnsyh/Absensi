@@ -81,4 +81,26 @@ class Absensi_model extends CI_Model
         $this->db->where('YEAR(tanggal)', $tahun);
         return $this->db->update('absensi', $data);
     }
+    public function get_monthly_summary($bulan, $tahun)
+    {
+        $this->db->select('
+        SUM(hadir) as total_hadir,
+        SUM(sakit) as total_sakit,
+        SUM(izin) as total_izin,
+        SUM(alfa) as total_alfa,
+        SUM(dinas_luar) as total_dinas_luar,
+        SUM(terlambat_kurang_30) + SUM(terlambat_30_90) + SUM(terlambat_lebih_90) as total_telat
+    ');
+        $this->db->from('absensi');
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        $query = $this->db->get();
+        return $query->row_array();
+    }
+
+    // Fungsi untuk menghitung total pegawai
+    public function get_total_pegawai()
+    {
+        return $this->db->count_all('pegawai');
+    }
 }

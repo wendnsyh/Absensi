@@ -2,7 +2,7 @@
     <div class="content">
         <div class="page-inner">
             <div class="page-header">
-                <h4 class="page-title">Data Absensi</h4>
+                <h4 class="page-title"><?= $title ?></h4>
                 <ul class="breadcrumbs">
                     <li class="nav-home">
                         <a href="<?= base_url('dashboard') ?>">

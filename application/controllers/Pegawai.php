@@ -7,18 +7,18 @@ defined('BASEPATH') or exit('No direct script access allowed');
  * @property CI_Loader $load
  * @property CI_Input $input
  * @property CI_Pagination $pagination
- * @property Karyawan_model $Karyawan_model
+ * @property pegawai_model $pegawai_model
  * @property CI_URI  $uri
  */
 
-class Karyawan extends CI_Controller
+class Pegawai extends CI_Controller
 {
 
     public function __construct()
     {
         parent::__construct();
         //is_logged_in(); // helper login
-        $this->load->model('Karyawan_model');
+        $this->load->model('pegawai_model');
     }
 
     public function index()
@@ -26,12 +26,12 @@ class Karyawan extends CI_Controller
         $this->load->library('pagination');
 
         $keyword = $this->input->get('keyword'); // ambil keyword dari form GET
-        $config['base_url'] = base_url('karyawan/index');
+        $config['base_url'] = base_url('pegawai/index');
         $config['per_page'] = 15;
         $config['uri_segment'] = 3;
 
         // Hitung total baris (dengan filter pencarian)
-        $config['total_rows'] = $this->Karyawan_model->countAll($keyword);
+        $config['total_rows'] = $this->pegawai_model->countAll($keyword);
 
         // Style Bootstrap 4
         $config['full_tag_open'] = '<ul class="pagination justify-content-center">';
@@ -55,19 +55,19 @@ class Karyawan extends CI_Controller
         $this->pagination->initialize($config);
 
         $start = $this->uri->segment(3, 0);
-        $data['title'] = 'Data Karyawan';
+        $data['title'] = 'Data pegawai';
         $data['user'] = $this->db->get_where(
             'user',
             ['email' => $this->session->userdata('email')]
         )->row_array();
-        $data['karyawan'] = $this->Karyawan_model->getData($config['per_page'], $start, $keyword);
+        $data['pegawai'] = $this->pegawai_model->getData($config['per_page'], $start, $keyword);
         $data['pagination'] = $this->pagination->create_links();
         $data['keyword'] = $keyword;
 
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('template/topbar', $data);
-        $this->load->view('karyawan/index', $data);
+        $this->load->view('pegawai/index', $data);
         $this->load->view('template/footer');
     }
 
@@ -76,10 +76,10 @@ class Karyawan extends CI_Controller
         $nip = $this->input->post('nip', true);
 
         // cek apakah nip sudah ada
-        $cek = $this->db->get_where('karyawan', ['nip' => $nip])->row_array();
+        $cek = $this->db->get_where('pegawai', ['nip' => $nip])->row_array();
         if ($cek) {
             $this->session->set_flashdata('message', '<div class="alert alert-danger">NIP sudah terdaftar, gunakan NIP lain!</div>');
-            redirect('karyawan');
+            redirect('pegawai');
         }
 
         $data = [
@@ -89,9 +89,9 @@ class Karyawan extends CI_Controller
             'divisi' => $this->input->post('divisi', true),
         ];
 
-        $this->Karyawan_model->insert($data);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Karyawan berhasil ditambahkan!</div>');
-        redirect('karyawan');
+        $this->pegawai_model->insert($data);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">pegawai berhasil ditambahkan!</div>');
+        redirect('pegawai');
     }
 
     public function edit($id)
@@ -99,10 +99,10 @@ class Karyawan extends CI_Controller
         $nip = $this->input->post('nip', true);
 
         // cek nip, tapi abaikan nip milik dirinya sendiri
-        $cek = $this->db->get_where('karyawan', ['nip' => $nip, 'id_karyawan !=' => $id])->row_array();
+        $cek = $this->db->get_where('pegawai', ['nip' => $nip, 'id_pegawai !=' => $id])->row_array();
         if ($cek) {
-            $this->session->set_flashdata('message', '<div class="alert alert-danger">NIP sudah digunakan karyawan lain!</div>');
-            redirect('karyawan');
+            $this->session->set_flashdata('message', '<div class="alert alert-danger">NIP sudah digunakan pegawai lain!</div>');
+            redirect('pegawai');
         }
 
         $data = [
@@ -112,15 +112,15 @@ class Karyawan extends CI_Controller
             'divisi' => $this->input->post('divisi', true),
         ];
 
-        $this->Karyawan_model->update($id, $data);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Karyawan berhasil diperbarui!</div>');
-        redirect('karyawan');
+        $this->pegawai_model->update($id, $data);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">pegawai berhasil diperbarui!</div>');
+        redirect('pegawai');
     }
 
     public function delete($id)
     {
-        $this->Karyawan_model->delete($id);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Karyawan berhasil dihapus!</div>');
-        redirect('karyawan');
+        $this->pegawai_model->delete($id);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">pegawai berhasil dihapus!</div>');
+        redirect('pegawai');
     }
 }

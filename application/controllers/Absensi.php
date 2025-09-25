@@ -209,5 +209,23 @@ class Absensi extends CI_Controller
         redirect('absensi');
     }
 
-    
+    public function laporan_rekap()
+    {
+        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['title'] = "Laporan Rekap Absensi";
+
+        $data['start_date'] = $this->input->post('start_date');
+        $data['end_date'] = $this->input->post('end_date');
+        $data['rekap_data'] = [];
+
+        if (!empty($data['start_date']) && !empty($data['end_date'])) {
+            $data['rekap_data'] = $this->Rekap_model->get_absensi_rekap_for_period($data['start_date'], $data['end_date']);
+        }
+
+        $this->load->view('template/header', $data);
+        $this->load->view('template/topbar', $data);
+        $this->load->view('template/sidebar', $data);
+        $this->load->view('absensi/laporan_rekap', $data);
+        $this->load->view('template/footer', $data);
+    }
 }

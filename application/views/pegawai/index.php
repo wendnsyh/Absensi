@@ -2,7 +2,7 @@
     <div class="content">
         <div class="page-inner">
             <div class="page-header">
-                <h4 class="page-title">Data Karyawan</h4>
+                <h4 class="page-title"><?= $title ?></h4>
                 <ul class="breadcrumbs">
                     <li class="nav-home">
                         <a href="<?= base_url('dashboard') ?>">
@@ -13,7 +13,7 @@
                         <i class="flaticon-right-arrow"></i>
                     </li>
                     <li class="nav-item">
-                        <a href="#">Karyawan</a>
+                        <a href="#">Pegawai</a>
                     </li>
                 </ul>
             </div>
@@ -25,18 +25,18 @@
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-header">
-                            <form action="<?= base_url('karyawan/index'); ?>" method="get" class="form-inline">
-                                <input type="text" name="keyword" class="form-control mr-2"
+                            <form action="<?= base_url('pegawai/index'); ?>" method="get" class="form-inline">
+                                <input type="text" name="keyword" class="form-control mr-2 mb-2"
                                     placeholder="Cari Nama / NIP" value="<?= $keyword; ?>">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-search"></i> Cari
                                 </button>
-                                <a href="<?= base_url('karyawan'); ?>" class="btn btn-secondary ml-2">
+                                <a href="<?= base_url('pegawai'); ?>" class="btn btn-secondary ml-2">
                                     <i class="fas fa-sync"></i> Reset
                                 </a>
                             </form>
-                            <button class="btn btn-primary" data-toggle="modal" data-target="#tambahKaryawan">
-                                <i class="fas fa-plus"></i> Tambah Karyawan
+                            <button class="btn btn-primary" data-toggle="modal" data-target="#tambahpegawai">
+                                <i class="fas fa-plus"></i> Tambah pegawai
                             </button>
                         </div>
                         <div class="card-body">
@@ -54,7 +54,7 @@
                                     </thead>
                                     <tbody>
                                         <?php $no = 1;
-                                        foreach ($karyawan as $row): ?>
+                                        foreach ($pegawai as $row): ?>
                                             <tr>
                                                 <td><?= $no++; ?></td>
                                                 <td><?= $row['nama']; ?></td>
@@ -63,11 +63,11 @@
                                                 <td><?= $row['divisi']; ?></td>
                                                 <td>
                                                     <!-- Tombol Edit -->
-                                                    <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editKaryawan<?= $row['id_karyawan']; ?>">
+                                                    <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editpegawai<?= $row['id_pegawai']; ?>">
                                                         <i class="fas fa-edit"></i> Edit
                                                     </button>
                                                     <!-- Tombol Hapus -->
-                                                    <a href="<?= base_url('karyawan/delete/' . $row['id_karyawan']); ?>"
+                                                    <a href="<?= base_url('pegawai/delete/' . $row['id_pegawai']); ?>"
                                                         class="btn btn-danger btn-sm"
                                                         onclick="return confirm('Yakin hapus data ini?');">
                                                         <i class="fas fa-trash"></i> Hapus
@@ -76,12 +76,12 @@
                                             </tr>
 
                                             <!-- Modal Edit -->
-                                            <div class="modal fade" id="editKaryawan<?= $row['id_karyawan']; ?>" tabindex="-1" role="dialog" aria-labelledby="editKaryawanLabel<?= $row['id_karyawan']; ?>" aria-hidden="true">
+                                            <div class="modal fade" id="editpegawai<?= $row['id_pegawai']; ?>" tabindex="-1" role="dialog" aria-labelledby="editpegawaiLabel<?= $row['id_pegawai']; ?>" aria-hidden="true">
                                                 <div class="modal-dialog" role="document">
                                                     <div class="modal-content">
-                                                        <form action="<?= base_url('karyawan/edit/' . $row['id_karyawan']); ?>" method="post">
+                                                        <form action="<?= base_url('pegawai/edit/' . $row['id_pegawai']); ?>" method="post">
                                                             <div class="modal-header">
-                                                                <h5 class="modal-title" id="editKaryawanLabel<?= $row['id_karyawan']; ?>">Edit Karyawan</h5>
+                                                                <h5 class="modal-title" id="editpegawaiLabel<?= $row['id_pegawai']; ?>">Edit pegawai</h5>
                                                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                                                     <span aria-hidden="true">&times;</span>
                                                                 </button>
@@ -137,13 +137,13 @@
                 </div>
             </div>
 
-            <!-- Modal Tambah Karyawan -->
-            <div class="modal fade" id="tambahKaryawan" tabindex="-1" role="dialog" aria-labelledby="tambahKaryawanLabel" aria-hidden="true">
+            <!-- Modal Tambah pegawai -->
+            <div class="modal fade" id="tambahpegawai" tabindex="-1" role="dialog" aria-labelledby="tambahpegawaiLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
-                        <form action="<?= base_url('karyawan/add'); ?>" method="post">
+                        <form action="<?= base_url('pegawai/add'); ?>" method="post">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="tambahKaryawanLabel">Tambah Karyawan</h5>
+                                <h5 class="modal-title" id="tambahpegawaiLabel">Tambah pegawai</h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
