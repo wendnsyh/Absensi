@@ -1,7 +1,15 @@
 <?php
+defined('BASEPATH') or exit('No direct script access allowed');
+
 /**
- * @property CI_session $CI_session 
+ * @property CI_DB_query_builder $db
+ * @property CI_Session $session
+ * @property CI_Loader $load
+ * @property CI_Input $input
+ * @property CI_Form_validation $form_validation
+ * @property User_model $User_model
  */
+
 class Admin extends CI_Controller
 {
     public function __construct()
@@ -44,7 +52,7 @@ class Admin extends CI_Controller
         $this->form_validation->set_rules('password', 'Password', 'required|min_length[5]');
 
         if ($this->form_validation->run() == false) {
-            $this->manageUser();
+            $this->manage_user();
         } else {
             $data = [
                 'name' => htmlspecialchars($this->input->post('name', true)),

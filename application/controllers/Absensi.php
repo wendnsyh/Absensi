@@ -3,7 +3,17 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
+/**
+ * @property CI_DB_query_builder $db
+ * @property CI_Session $session
+ * @property CI_Pagination $pagination
+ * @property Absensi_model $Absensi_model
+ * @property Rekap_model $Rekap_model
+ * @property CI_Input  $input
+ * @property CI_URI  $uri
+ */
 
 class Absensi extends CI_Controller
 {
@@ -16,19 +26,29 @@ class Absensi extends CI_Controller
         $this->load->library('pagination');
     }
 
-
     public function index()
     {
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['title'] = "Data Absensi";
+
+        $bulan_param = $this->input->get('bulan');
+        $tahun_param = $this->input->get('tahun');
         $keyword = $this->input->get('keyword');
 
-        // Konfigurasi Pagination
-        $config['base_url'] = base_url('absensi/index');
-        $config['total_rows'] = $this->Absensi_model->count_all_absensi($keyword);
-        $config['per_page'] = 20; // 20 baris per halaman
+        if (empty($bulan_param)) {
+            $bulan_param = date('n');
+        }
+        if (empty($tahun_param)) {
+            $tahun_param = date('Y');
+        }
 
-        // Konfigurasi Tampilan Pagination
+        $config['base_url'] = base_url('absensi/index');
+        $config['total_rows'] = $this->Absensi_model->count_all_absensi($bulan_param, $tahun_param, $keyword);
+        $config['per_page'] = 20;
+
+        $config['reuse_query_string'] = TRUE;
+        $config['first_url'] = $config['base_url'] . '?' . http_build_query($_GET);
+
         $config['full_tag_open'] = '<nav><ul class="pagination">';
         $config['full_tag_close'] = '</ul></nav>';
         $config['first_link'] = 'Pertama';
@@ -41,15 +61,14 @@ class Absensi extends CI_Controller
         $config['num_tag_close'] = '</li>';
         $config['attributes'] = ['class' => 'page-link'];
 
-        // Menambahkan keyword ke URL pagination
-        $config['suffix'] = '?' . http_build_query($_GET, '', '&');
-        $config['first_url'] = $config['base_url'] . $config['suffix'];
-
         $this->pagination->initialize($config);
 
-        // Mengambil data absensi dengan pagination dan keyword
         $data['start'] = $this->uri->segment(3) ?: 0;
-        $data['absensi'] = $this->Absensi_model->get_all_absensi($config['per_page'], $data['start'], $keyword);
+        $data['absensi'] = $this->Absensi_model->get_all_absensi($config['per_page'], $data['start'], $bulan_param, $tahun_param, $keyword);
+        $data['pegawai'] = $this->Absensi_model->get_all_pegawai();
+
+        $data['bulan_terpilih'] = $bulan_param;
+        $data['tahun_terpilih'] = $tahun_param;
 
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);
@@ -60,11 +79,13 @@ class Absensi extends CI_Controller
 
     public function import()
     {
+        $bulan_impor = $this->input->post('bulan_impor');
+        $tahun_impor = $this->input->post('tahun_impor');
+
         if (empty($_FILES['file']['name'])) {
             $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Pilih file terlebih dahulu.</div>');
             redirect('absensi');
         }
-
         $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
         if ($extension !== 'xlsx' && $extension !== 'xls') {
             $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Format file tidak valid. Gunakan .xlsx atau .xls.</div>');
@@ -75,60 +96,59 @@ class Absensi extends CI_Controller
         $spreadsheet = $reader->load($_FILES['file']['tmp_name']);
         $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
 
+        $data_absensi_to_insert = [];
+        $data_absensi_to_update = [];
+
         $data_absensi = [];
-        // Asumsi baris 1 adalah header, mulai dari baris 2
         for ($i = 2; $i <= count($sheetData); $i++) {
             $baris = $sheetData[$i];
 
-            // Cek jika kolom NIP (Kolom C) tidak kosong
             if (!empty($baris['C'])) {
                 $nama = $baris['B'];
                 $nip = $baris['C'];
-                $tanggal_awal_bulan = strtotime($baris['D']); // Asumsi kolom D adalah tanggal 1
-                $bulan = date('n', $tanggal_awal_bulan);
-                $tahun = date('Y', $tanggal_awal_bulan);
+                $tanggal = date('Y-m-d', mktime(0, 0, 0, $bulan_impor, 1, $tahun_impor));
 
-                // Kolom Status (Sakit, Izin, Alfa, Cuti, Dinas Luar)
-                $sakit = $baris['AO'] ?: 0;
-                $izin = $baris['AP'] ?: 0;
-                $alfa = $baris['AQ'] ?: 0;
-                $cuti = $baris['AR'] ?: 0;
-                $dinas_luar = $baris['AS'] ?: 0;
+                // Ambil data ringkasan dari kolom yang benar
+                $hadir = $baris['I'] ?? 0;
+                $sakit = $baris['AO'] ?? 0;
+                $izin = $baris['AP'] ?? 0;
+                $alfa = $baris['AQ'] ?? 0;
+                $cuti = $baris['AR'] ?? 0;
+                $dinas_luar = $baris['AS'] ?? 0;
+                $terlambat_kurang_30 = $baris['AJ'] ?? 0;
+                $terlambat_30_90 = $baris['AK'] ?? 0;
+                $terlambat_lebih_90 = $baris['AL'] ?? 0;
+                $tidak_finger_masuk = $baris['AN'] ?? 0;
+                $tidak_finger_pulang = $baris['AN'] ?? 0;
 
-                // Kolom Terlambat
-                $telat_kurang_30 = $baris['AJ'] ?: 0;
-                $telat_30_90 = $baris['AK'] ?: 0;
-                $telat_lebih_90 = $baris['AL'] ?: 0;
-                $tidak_finger = $baris['AN'] ?: 0;
-
-                // Masukkan data ke array
                 $data_absensi[] = [
+                    'no'                  => $baris['A'],
                     'nama'                => $nama,
                     'nip'                 => $nip,
-                    'tanggal'             => date('Y-m-d', $tanggal_awal_bulan),
+                    'tanggal'             => $tanggal,
+                    'hadir'               => $hadir,
                     'sakit'               => $sakit,
                     'izin'                => $izin,
                     'alfa'                => $alfa,
                     'cuti'                => $cuti,
                     'dinas_luar'          => $dinas_luar,
-                    'terlambat_kurang_30' => $telat_kurang_30,
-                    'terlambat_30_90'     => $telat_30_90,
-                    'terlambat_lebih_90'  => $telat_lebih_90,
-                    'tidak_finger_masuk'  => $tidak_finger,
-                    'tidak_finger_pulang' => 0, // Anda perlu menyesuaikan logika ini
-                    'hadir'               => ($sakit || $izin || $alfa || $cuti || $dinas_luar) ? 0 : 1
+                    'terlambat_kurang_30' => $terlambat_kurang_30,
+                    'terlambat_30_90'     => $terlambat_30_90,
+                    'terlambat_lebih_90'  => $terlambat_lebih_90,
+                    'tidak_finger_masuk'  => $tidak_finger_masuk,
+                    'tidak_finger_pulang' => $tidak_finger_pulang,
                 ];
             }
         }
 
         if (!empty($data_absensi)) {
             $this->Absensi_model->insert_batch($data_absensi);
-            $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">Data absensi berhasil diimpor!</div>');
+            $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">Data absensi bulan ' . date('F Y', mktime(0, 0, 0, $bulan_impor, 1, $tahun_impor)) . ' berhasil diimpor!</div></div>');
         } else {
             $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Tidak ada data valid yang ditemukan di file.</div>');
         }
 
-        redirect('absensi');
+        redirect('absensi?bulan=' . $bulan_impor . '&tahun=' . $tahun_impor);
     }
 
     public function add()
@@ -157,33 +177,28 @@ class Absensi extends CI_Controller
 
         $this->Absensi_model->add_absensi($data);
         $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">Data absensi berhasil ditambahkan.</div>');
-        redirect('absensi');
+        redirect('absensi?bulan=' . date('n', strtotime($data['tanggal'])) . '&tahun=' . date('Y', strtotime($data['tanggal'])));
     }
-    // ... di dalam class Absensi extends CI_Controller
+
     public function detail($id)
     {
-        // Cek apakah ID ada
         if (!$id) {
             show_404();
         }
 
-        // Ambil data detail absensi dari model
         $data['absensi'] = $this->Absensi_model->get_absensi_by_id($id);
 
-        // Jika data tidak ditemukan, tampilkan error 404
         if (empty($data['absensi'])) {
             show_404();
         }
 
-        // Data user, title, dsb.
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['title'] = "Detail Absensi";
 
-        // Muat view detail dengan data yang sudah disiapkan
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);
         $this->load->view('template/sidebar', $data);
-        $this->load->view('absensi/detail_absensi', $data); // Mengarahkan ke view baru 'absensi/detail.php'
+        $this->load->view('absensi/detail_absensi', $data);
         $this->load->view('template/footer', $data);
     }
 
@@ -193,4 +208,6 @@ class Absensi extends CI_Controller
         $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">Data absensi berhasil dihapus.</div>');
         redirect('absensi');
     }
+
+    
 }

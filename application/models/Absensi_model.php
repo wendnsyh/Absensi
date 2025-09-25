@@ -3,39 +3,39 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Absensi_model extends CI_Model
 {
-    // Fungsi untuk mendapatkan data absensi dengan pagination dan pencarian
-    public function get_all_absensi($limit, $start, $keyword = null)
+    public function get_all_absensi($limit, $start, $bulan = null, $tahun = null, $keyword = null)
     {
-        // Logika pencarian
         if ($keyword) {
             $this->db->like('nama', $keyword);
             $this->db->or_like('nip', $keyword);
+        }
+        if (!empty($bulan) && !empty($tahun)) {
+            $this->db->where('MONTH(tanggal)', $bulan);
+            $this->db->where('YEAR(tanggal)', $tahun);
         }
         $this->db->order_by('tanggal', 'DESC');
         $query = $this->db->get('absensi', $limit, $start);
         return $query->result_array();
     }
 
-    // Fungsi untuk menghitung total data
-    public function count_all_absensi($keyword = null)
+    public function count_all_absensi($bulan = null, $tahun = null, $keyword = null)
     {
         if ($keyword) {
             $this->db->like('nama', $keyword);
             $this->db->or_like('nip', $keyword);
         }
+        if ($bulan && $tahun) {
+            $this->db->where('MONTH(tanggal)', $bulan);
+            $this->db->where('YEAR(tanggal)', $tahun);
+        }
         return $this->db->get('absensi')->num_rows();
     }
+
     public function insert_batch($data)
     {
         return $this->db->insert_batch('absensi', $data);
     }
 
-    public function get_absensi_by_id($id)
-    {
-        $this->db->where('id', $id);
-        return $this->db->get('absensi')->row_array();
-    }
-    
     public function add_absensi($data)
     {
         return $this->db->insert('absensi', $data);
@@ -58,25 +58,27 @@ class Absensi_model extends CI_Model
         return $this->db->get('pegawai')->row_array();
     }
 
-    public function get_rekap_bulanan($bulan, $tahun)
+    public function get_absensi_by_id($id)
     {
-        $this->db->where('bulan', $bulan);
-        $this->db->where('tahun', $tahun);
-        $query = $this->db->get('rekap_absensi');
-        return $query->result();
+        $this->db->where('id', $id);
+        return $this->db->get('absensi')->row_array();
     }
-    // Tambahkan fungsi baru di Absensi.php
-    public function get_detail_absensi()
+
+    // Fungsi untuk memeriksa apakah data absensi sudah ada
+    public function absensi_exists($nip, $bulan, $tahun)
     {
-        // Cek apakah permintaan datang dari AJAX
-        if (!$this->input->is_ajax_request()) {
-            show_404();
-        }
+        $this->db->where('nip', $nip);
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        return $this->db->get('absensi')->num_rows() > 0;
+    }
 
-        $id = $this->input->post('id');
-        $data_absensi = $this->Absensi_model->get_absensi_by_id($id);
-
-        // Kirim data dalam format JSON
-        echo json_encode($data_absensi);
+    // Fungsi untuk memperbarui data absensi yang sudah ada
+    public function update_absensi($nip, $bulan, $tahun, $data)
+    {
+        $this->db->where('nip', $nip);
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        return $this->db->update('absensi', $data);
     }
 }

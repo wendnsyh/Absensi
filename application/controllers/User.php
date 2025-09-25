@@ -1,6 +1,13 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
-
+defined('BASEPATH') or exit('No direct script access allowed');
+/**
+ * @property CI_DB_query_builder $db
+ * @property CI_Session $session
+ * @property CI_Loader $load
+ * @property CI_Form_validation $form_validation
+ * @property CI_Input $input
+ * @property CI_Upload $upload
+ */
 class User extends CI_Controller
 {
     public function __construct()
@@ -20,7 +27,7 @@ class User extends CI_Controller
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('template/topbar', $data);
-        $this->load->view('user/index', $data); 
+        $this->load->view('user/index', $data);
         $this->load->view('template/footer');
     }
 

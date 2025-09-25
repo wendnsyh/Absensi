@@ -1,6 +1,16 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
+/**
+ * @property CI_DB_query_builder $db
+ * @property CI_Session $session
+ * @property CI_Loader $load
+ * @property CI_Input $input
+ * @property CI_Pagination $pagination
+ * @property Karyawan_model $Karyawan_model
+ * @property CI_URI  $uri
+ */
+
 class Karyawan extends CI_Controller
 {
 
