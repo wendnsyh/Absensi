@@ -71,6 +71,21 @@ class Admin extends CI_Controller
         }
     }
 
+    public function editUser($id)
+    {
+        $data = [
+            'name'      => $this->input->post('name'),
+            'email'     => $this->input->post('email'),
+            'role_id'   => $this->input->post('role_id'),
+            'is_active' => $this->input->post('is_active')
+        ];
+
+        $this->db->where('id', $id);
+        $this->db->update('user', $data);
+
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Data user berhasil diperbarui!</div>');
+        redirect('admin/manage_user');
+    }
     public function deleteUser($id)
     {
         $user = $this->db->get_where('user', ['id' => $id])->row_array();

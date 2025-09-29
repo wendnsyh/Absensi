@@ -35,11 +35,11 @@ class Absensi extends CI_Controller
         $tahun_param = $this->input->get('tahun');
         $keyword = $this->input->get('keyword');
 
-        if (empty($bulan_param)) {
-            $bulan_param = date('n');
+        if ($bulan_param === null || $bulan_param == '') {
+            $bulan_param = 0; 
         }
-        if (empty($tahun_param)) {
-            $tahun_param = date('Y');
+        if ($tahun_param === null || $tahun_param == '') {
+            $tahun_param = 0; 
         }
 
         $config['base_url'] = base_url('absensi/index');

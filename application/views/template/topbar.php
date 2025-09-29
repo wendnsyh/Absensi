@@ -77,8 +77,6 @@
                                     </li>
                                     <li>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" href="<?=  base_url('user/ubah_password')?>">Account Setting</a>
-                                        <div class="dropdown-divider"></div>
                                         <a class="dropdown-item" href="<?= base_url('auth/logout') ?>" onclick="return confirm('Yakin logout?')">Logout</a>
                                     </li>
                                 </div>

@@ -116,33 +116,30 @@ class Menu extends CI_Controller
 
     public function edit_menu($id)
     {
-        $data['title'] = "Edit Menu Management";
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['title'] = 'Edit Menu';
+        $data['menu'] = $this->db->get_where('user_menu', ['id' => $id])->row_array();
 
-        $this->load->model('Menu_model', 'menu');
-
-        // Ambil data menu berdasarkan id lewat model
-        $data['menu'] = $this->menu->getMenuById($id);
-
-        // Validasi input
-        $this->form_validation->set_rules('menu', 'Menu', 'required|trim');
+        $this->form_validation->set_rules('menu', 'Nama Menu', 'required|trim');
 
         if ($this->form_validation->run() == false) {
-            $this->load->view('template/header', $data);
-            $this->load->view('template/sidebar', $data);
-            $this->load->view('template/topbar', $data);
-            $this->load->view('menu/menu_edit', $data);
-            $this->load->view('template/footer');
+            $this->load->view('templates/header', $data);
+            $this->load->view('templates/sidebar', $data);
+            $this->load->view('templates/topbar', $data);
+            $this->load->view('menu/edit_menu', $data);
+            $this->load->view('templates/footer');
         } else {
-            $this->menu->updateMenu($id, [
-                'menu' => $this->input->post('menu', true)
-            ]);
-
-            $this->session->set_flashdata(
-                'message',
-                '<div class="alert alert-success" role="alert">Menu berhasil diubah!</div>'
-            );
+            $this->db->set('menu', $this->input->post('menu'));
+            $this->db->where('id', $id);
+            $this->db->update('user_menu');
+            $this->session->set_flashdata('message', '<div class="alert alert-success">Menu berhasil diubah!</div>');
             redirect('menu');
         }
+    }
+
+    public function delete_menu($id)
+    {
+        $this->db->delete('user_menu', ['id' => $id]);
+        $this->session->set_flashdata('message', '<div class="alert alert-danger">Menu berhasil dihapus!</div>');
+        redirect('menu');
     }
 }
