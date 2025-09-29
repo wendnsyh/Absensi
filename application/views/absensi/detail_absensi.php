@@ -31,6 +31,9 @@
                             <div class="d-flex align-items-center">
                                 <h4 class="card-title text-white mb-0">Detail Absensi: <?= $absensi['nama'] ?></h4>
                                 <div class="ml-auto">
+                                    <a href="<?= base_url('absensi/laporan_detail_pdf/' . $absensi['id']); ?>" class="btn btn-sm btn-light mr-2" target="_blank">
+                                        <i class="fas fa-file-pdf"></i> Export to PDF
+                                    </a>
                                     <a href="<?= base_url('absensi'); ?>" class="btn btn-sm btn-light">
                                         <i class="fas fa-arrow-left"></i> Kembali
                                     </a>

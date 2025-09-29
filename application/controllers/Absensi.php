@@ -4,6 +4,7 @@ defined('BASEPATH') or exit('No direct script access allowed');
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Xlsx;
 use PhpOffice\PhpSpreadsheet\Shared\Date;
+use Dompdf\Dompdf;
 
 /**
  * @property CI_DB_query_builder $db
@@ -13,6 +14,8 @@ use PhpOffice\PhpSpreadsheet\Shared\Date;
  * @property Rekap_model $Rekap_model
  * @property CI_Input  $input
  * @property CI_URI  $uri
+ * @property CI_Loader $load
+ * @property CI_Dompdf $Dompdf
  */
 
 class Absensi extends CI_Controller
@@ -35,11 +38,11 @@ class Absensi extends CI_Controller
         $tahun_param = $this->input->get('tahun');
         $keyword = $this->input->get('keyword');
 
-        if ($bulan_param === null || $bulan_param == '') {
-            $bulan_param = 0; 
+        if (empty($bulan_param)) {
+            $bulan_param = date('n');
         }
-        if ($tahun_param === null || $tahun_param == '') {
-            $tahun_param = 0; 
+        if (empty($tahun_param)) {
+            $tahun_param = date('Y');
         }
 
         $config['base_url'] = base_url('absensi/index');
@@ -207,6 +210,34 @@ class Absensi extends CI_Controller
         $this->Absensi_model->delete_absensi($id);
         $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">Data absensi berhasil dihapus.</div>');
         redirect('absensi');
+    }
+
+    public function laporan_detail_pdf($id)
+    {
+
+        if (!$id) {
+            show_404();
+        }
+
+        $data['absensi'] = $this->Absensi_model->get_absensi_by_id($id);
+
+        if (empty($data['absensi'])) {
+            show_404();
+        }
+
+        $html = $this->load->view('absensi/laporan_detail_pdf', $data, true);
+
+        $dompdf = new Dompdf();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+
+        $dompdf->render();
+
+
+        $file_name = 'Detail_Absensi_' . $data['absensi']['nama'] . '.pdf';
+
+
+        $dompdf->stream($file_name, array("Attachment" => false));
     }
 
     public function laporan_rekap()

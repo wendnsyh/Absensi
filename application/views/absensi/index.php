@@ -26,7 +26,7 @@
                         <form action="<?= base_url('absensi/index'); ?>" method="get" class="form-inline">
                             <label class="mr-2">Tampilkan:</label>
                             <select name="bulan" class="form-control mr-2" onchange="this.form.submit()">
-                                <option value="0">Semua Bulan</option>
+                                <option value="">Semua Bulan</option>
                                 <?php for ($i = 1; $i <= 12; $i++): ?>
                                     <option value="<?= $i; ?>" <?= (isset($bulan_terpilih) && $bulan_terpilih == $i) ? 'selected' : ''; ?>>
                                         <?= date('F', mktime(0, 0, 0, $i, 10)); ?>
@@ -34,7 +34,7 @@
                                 <?php endfor; ?>
                             </select>
                             <select name="tahun" class="form-control mr-4" onchange="this.form.submit()">
-                                <option value="0">Semua Tahun</option>
+                                <option value="">Semua Tahun</option>
                                 <?php for ($i = date('Y'); $i >= (date('Y') - 5); $i--): ?>
                                     <option value="<?= $i; ?>" <?= (isset($tahun_terpilih) && $tahun_terpilih == $i) ? 'selected' : ''; ?>>
                                         <?= $i; ?>
@@ -59,6 +59,9 @@
                             <button class="btn btn-success" data-toggle="modal" data-target="#importExcelModal">
                                 <i class="fas fa-file-excel"></i> Import Excel
                             </button>
+                            <button class="btn btn-primary" data-toggle="modal" data-target="#tambahAbsensiModal">
+                                <i class="fas fa-plus"></i> Tambah Absensi
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -69,7 +72,7 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Nama</th>
-                                    <th>NIP</th>
+                                    <th>ID Pegawai</th>
                                     <th>Tanggal</th>
                                     <th>Total Tidak Masuk</th>
                                     <th>Total Telat</th>
