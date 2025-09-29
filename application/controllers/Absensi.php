@@ -146,7 +146,13 @@ class Absensi extends CI_Controller
 
         if (!empty($data_absensi)) {
             $this->Absensi_model->insert_batch($data_absensi);
-            $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">Data absensi bulan ' . date('F Y', mktime(0, 0, 0, $bulan_impor, 1, $tahun_impor)) . ' berhasil diimpor!</div></div>');
+            $this->session->set_flashdata('message', '
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <strong>Berhasil!</strong> Data absensi berhasil diimpor untuk bulan ' . date('F Y', mktime(0, 0, 0, $bulan_impor, 1, $tahun_impor)) . '.
+             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>');   
         } else {
             $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Tidak ada data valid yang ditemukan di file.</div>');
         }

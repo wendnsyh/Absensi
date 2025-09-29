@@ -50,7 +50,7 @@
                             <div class="row">
                                 <div class="col-5">
                                     <div class="icon-big text-center">
-                                        <i class="flaticon-time-2"></i>
+                                        <i class="flaticon-time"></i>
                                     </div>
                                 </div>
                                 <div class="col-7 col-stats">
