@@ -114,24 +114,34 @@ class Menu extends CI_Controller
         redirect('menu/submenu');
     }
 
-    public function edit_menu($id)
+    public function edit_menu($id = null)
     {
+        // Jika ID tidak diberikan, arahkan kembali ke halaman menu atau tampilkan error
+        if ($id === null) {
+            redirect('menu');
+        }
+
         $data['title'] = 'Edit Menu';
+        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['menu'] = $this->db->get_where('user_menu', ['id' => $id])->row_array();
 
         $this->form_validation->set_rules('menu', 'Nama Menu', 'required|trim');
 
         if ($this->form_validation->run() == false) {
-            $this->load->view('templates/header', $data);
-            $this->load->view('templates/sidebar', $data);
-            $this->load->view('templates/topbar', $data);
+            $this->load->view('template/header', $data);
+            $this->load->view('template/sidebar', $data);
+            $this->load->view('template/topbar', $data);
             $this->load->view('menu/edit_menu', $data);
-            $this->load->view('templates/footer');
+            $this->load->view('template/footer');
         } else {
             $this->db->set('menu', $this->input->post('menu'));
             $this->db->where('id', $id);
             $this->db->update('user_menu');
-            $this->session->set_flashdata('message', '<div class="alert alert-success">Menu berhasil diubah!</div>');
+            $this->session->set_flashdata('message', '<div class="alert alert-success alert-dismissible fade show" role="alert">
+            <strong>Berhasil!</strong> Data Anda telah disimpan.
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+            </button> </div>');
             redirect('menu');
         }
     }
