@@ -24,6 +24,7 @@ class Absensi_model extends CI_Model
             $this->db->or_like('nip', $keyword);
             $this->db->group_end();
         }
+        $this->db->order_by('nama', 'ASC');
 
         $this->db->order_by('tanggal', 'DESC');
         return $this->db->get('absensi')->result_array();

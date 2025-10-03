@@ -67,7 +67,7 @@ class Admin extends CI_Controller
                 'message',
                 '<div class="alert alert-success" role="alert">Admin berhasil ditambahkan!</div>'
             );
-            redirect('admin/manageUser');
+            redirect('admin/manage_user');
         }
     }
 
@@ -103,7 +103,7 @@ class Admin extends CI_Controller
             );
         }
 
-        redirect('admin/manageUser');
+        redirect('admin/manage_user');
     }
 
     public function role()
