@@ -38,12 +38,12 @@ class Absensi extends CI_Controller
         $tahun_param = $this->input->get('tahun');
         $keyword = $this->input->get('keyword');
 
-        if (empty($bulan_param)) {
-            $bulan_param = date('n');
+        if ($bulan_param === null || $bulan_param == '') {
+        $bulan_param = date ('n'); // 0 = semua bulan
         }
-        if (empty($tahun_param)) {
-            $tahun_param = date('Y');
-        }
+        if ($tahun_param === null || $tahun_param == '') {
+            $tahun_param = date ('Y'); // 0 = semua tahun
+        }  
 
         $config['base_url'] = base_url('absensi/index');
         $config['total_rows'] = $this->Absensi_model->count_all_absensi($bulan_param, $tahun_param, $keyword);

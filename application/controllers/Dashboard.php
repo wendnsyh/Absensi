@@ -24,9 +24,11 @@ class Dashboard extends CI_Controller
         $data['title'] = 'Dashboard';
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
 
-        // PENTING: Inisialisasi variabel bulan dan tahun
-        $bulan_param = date('n'); // Mengambil bulan saat ini (1-12)
-        $tahun_param = date('Y'); // Mengambil tahun saat ini (YYYY)
+        $bulan_param = $this->input->get('bulan') ?? date('n');
+        $tahun_param = $this->input->get('tahun') ?? date('Y');
+
+        $data['bulan'] = $bulan_param;
+        $data['tahun'] = $tahun_param;
 
         $data['summary'] = $this->Absensi_model->get_monthly_summary($bulan_param, $tahun_param);
         $data['total_pegawai'] = $this->Absensi_model->get_total_pegawai();

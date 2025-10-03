@@ -3,32 +3,50 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Absensi_model extends CI_Model
 {
-    public function get_all_absensi($limit, $start, $bulan = null, $tahun = null, $keyword = null)
+    public function get_all_absensi($limit, $start, $bulan, $tahun, $keyword = null)
     {
-        if ($keyword) {
-            $this->db->like('nama', $keyword);
-            $this->db->or_like('nip', $keyword);
-        }
-        if (!empty($bulan) && !empty($tahun)) {
-            $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->limit($limit, $start);
+
+        // filter tahun kalau ada
+        if ($tahun != 0) {
             $this->db->where('YEAR(tanggal)', $tahun);
         }
+
+        // filter bulan kalau ada
+        if ($bulan != 0) {
+            $this->db->where('MONTH(tanggal)', $bulan);
+        }
+
+        // filter keyword (nama/nip)
+        if (!empty($keyword)) {
+            $this->db->group_start();
+            $this->db->like('nama', $keyword);
+            $this->db->or_like('nip', $keyword);
+            $this->db->group_end();
+        }
+
         $this->db->order_by('tanggal', 'DESC');
-        $query = $this->db->get('absensi', $limit, $start);
-        return $query->result_array();
+        return $this->db->get('absensi')->result_array();
     }
 
-    public function count_all_absensi($bulan = null, $tahun = null, $keyword = null)
+    public function count_all_absensi($bulan, $tahun, $keyword = null)
     {
-        if ($keyword) {
-            $this->db->like('nama', $keyword);
-            $this->db->or_like('nip', $keyword);
-        }
-        if ($bulan && $tahun) {
-            $this->db->where('MONTH(tanggal)', $bulan);
+        if ($tahun != 0) {
             $this->db->where('YEAR(tanggal)', $tahun);
         }
-        return $this->db->get('absensi')->num_rows();
+
+        if ($bulan != 0) {
+            $this->db->where('MONTH(tanggal)', $bulan);
+        }
+
+        if (!empty($keyword)) {
+            $this->db->group_start();
+            $this->db->like('nama', $keyword);
+            $this->db->or_like('nip', $keyword);
+            $this->db->group_end();
+        }
+
+        return $this->db->count_all_results('absensi');
     }
 
     public function insert_batch($data)
