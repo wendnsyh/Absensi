@@ -4,8 +4,8 @@
             <!-- Logo Header -->
             <div class="logo-header" data-background-color="dark2">
                 <a class="sidebar-brand d-flex align-items-center justift-content-center">
-                    <div class="sidebar-brand-icon rotate-n-15">
-                        <i class="fas fa-code"></i>
+                    <div class="sidebar-brand-icon">
+                        <img src="<?= base_url('assets/img/logo/logo_tangsel.png'); ?>" alt="Logo Tangsel" style="width: 35px; height: 35px;">
                     </div>
                 </a>
                 <button class="navbar-toggler sidenav-toggler ml-auto" type="button" data-toggle="collapse" data-target="collapse" aria-expanded="false" aria-label="Toggle navigation">
