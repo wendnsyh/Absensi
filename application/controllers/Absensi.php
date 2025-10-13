@@ -292,91 +292,77 @@ class Absensi extends CI_Controller
 
     public function import_harian()
     {
-        $bulan_impor = $this->input->post('bulan_impor');
-        $tahun_impor = $this->input->post('tahun_impor');
+        $file = $_FILES['file']['tmp_name'];
 
-        if (empty($_FILES['file']['name'])) {
-            $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Pilih file terlebih dahulu.</div>');
+        if (!$file) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger">File tidak ditemukan!</div>');
             redirect('absensi/absen_harian');
         }
 
-        $extension = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-        if ($extension !== 'xlsx' && $extension !== 'xls') {
-            $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Format file tidak valid. Gunakan .xlsx atau .xls.</div>');
-            redirect('absensi/absen_harian');
-        }
+        $spreadsheet = IOFactory::load($file);
+        $sheet = $spreadsheet->getActiveSheet();
 
-        $reader = new Xlsx();
-        $spreadsheet = $reader->load($_FILES['file']['tmp_name']);
-        $sheetData = $spreadsheet->getActiveSheet()->toArray(null, true, true, true);
+        // Ambil bulan & tahun dari form
+        $bulan = $this->input->post('bulan_impor');
+        $tahun = $this->input->post('tahun_impor');
+
+        // Kolom D = tanggal 1, E = tanggal 2, dst
+        $kolom_awal = 'D';
+        $kolom_akhir = $sheet->getHighestColumn();
+        $baris_terakhir = $sheet->getHighestRow();
 
         $data_absensi_harian = [];
 
-    // Use raw where clauses to avoid the query builder escaping function calls
-    $this->db->where("MONTH(tanggal) = $bulan_impor", null, false);
-    $this->db->where("YEAR(tanggal) = $tahun_impor", null, false);
-    $this->db->delete('absensi_harian');
+        // Struktur: 
+        // Baris nama = 9, 12, 15, ...
+        // IN = baris+1
+        // OUT = baris+2
+        for ($row = 9; $row <= $baris_terakhir; $row++) {
+            $nama = $sheet->getCell("B$row")->getValue();
+            $nip = $sheet->getCell("C$row")->getValue();
 
-        // PENTING: Ambil baris header tanggal (baris ke-5)
-        $baris_tanggal_header = $sheetData[5];
+            // Jika ada nama & nip, berarti baris ini pegawai
+            if ($nama && $nip) {
+                $baris_in = $row + 1;  // baris IN
+                $baris_out = $row + 2; // baris OUT
 
-        // Asumsi data absensi dimulai dari baris 8
-        for ($i = 8; $i <= count($sheetData); $i++) {
-            $baris_data = $sheetData[$i];
+                $tanggal = 1;
+                $col = $kolom_awal;
 
-            if (!empty($baris_data['C'])) { // Cek NIP di kolom C
-                $nip = $baris_data['C'];
+                // Loop semua tanggal
+                while (Coordinate::columnIndexFromString($col) <= Coordinate::columnIndexFromString($kolom_akhir)) {
+                    $jam_in = $sheet->getCell($col . $baris_in)->getValue();
+                    $jam_out = $sheet->getCell($col . $baris_out)->getValue();
 
-                // PENTING: Loop melalui kolom D hingga akhir bulan
-                $startCol = Coordinate::columnIndexFromString('D');
-                $endCol = $startCol + cal_days_in_month(CAL_GREGORIAN, $bulan_impor, $tahun_impor) - 1;
-                for ($colIdx = $startCol; $colIdx <= $endCol; $colIdx++) {
-                    $nama_kolom = Coordinate::stringFromColumnIndex($colIdx);
-
-                    $hari_tanggal = $baris_tanggal_header[$nama_kolom] ?? null;
-
-                    if (!empty($hari_tanggal)) {
-                        $tanggal = date('Y-m-d', mktime(0, 0, 0, $bulan_impor, $hari_tanggal, $tahun_impor));
-
-                        $jam_in_out = $baris_data[$nama_kolom] ?? null;
-                        $jam_in = null;
-                        $jam_out = null;
-
-                        if (!empty($jam_in_out)) {
-                            $waktu = preg_split('/\s+/', trim($jam_in_out)); // Memisahkan string berdasarkan spasi atau baris baru
-                            $jam_in = isset($waktu[0]) ? trim($waktu[0]) : null;
-                            $jam_out = isset($waktu[1]) ? trim($waktu[1]) : null;
-                        }
-
-                        // Asumsi Status dan Keterangan ada di kolom lain
-                        // Ini perlu disesuaikan jika format Anda berbeda
-                        $status = '';
-                        $keterangan = '';
-
+                    if (!empty($jam_in) || !empty($jam_out)) {
                         $data_absensi_harian[] = [
                             'nip' => $nip,
-                            'tanggal' => $tanggal,
-                            'jam_in' => $jam_in,
-                            'jam_out' => $jam_out,
-                            'status' => $status,
-                            'keterangan' => $keterangan,
+                            'tanggal' => "$tahun-$bulan-" . str_pad($tanggal, 2, '0', STR_PAD_LEFT),
+                            'jam_in' => $jam_in ?: null,
+                            'jam_out' => $jam_out ?: null
                         ];
                     }
+
+                    // Geser ke kolom berikutnya
+                    $tanggal++;
+                    $col = Coordinate::stringFromColumnIndex(Coordinate::columnIndexFromString($col) + 1);
                 }
+
+                // Lompat ke pegawai berikutnya (3 baris berikutnya)
+                $row += 2;
             }
         }
 
+        // Simpan ke DB
         if (!empty($data_absensi_harian)) {
             $this->AbsensiHarian_model->insert_batch($data_absensi_harian);
-            $this->session->set_flashdata('message', '<div class="alert alert-success" role="alert">Data absensi harian berhasil diimpor!</div>');
+            $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi harian berhasil diimpor!</div>');
         } else {
-            $this->session->set_flashdata('message', '<div class="alert alert-danger" role="alert">Tidak ada data valid yang ditemukan di file.</div>');
+            $this->session->set_flashdata('message', '<div class="alert alert-danger">Tidak ada data valid yang ditemukan di file.</div>');
         }
 
-        redirect('absensi/absen_harian?bulan=' . $bulan_impor . '&tahun=' . $tahun_impor);
+        redirect('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun);
     }
-
-
     public function detail_harian($nip)
     {
         $bulan = $this->input->get('bulan') ?: date('n');

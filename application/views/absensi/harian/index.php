@@ -21,7 +21,7 @@
             <?= $this->session->flashdata('message'); ?>
 
             <div class="card">
-                <div class="card-header d-flex justify-content-between">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <form method="get" class="form-inline">
                         <label class="mr-2">Bulan:</label>
                         <select name="bulan" class="form-control mr-2" onchange="this.form.submit()">
@@ -44,6 +44,7 @@
                         <i class="fas fa-file-excel"></i> Import
                     </button>
                 </div>
+
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-striped table-hover">
@@ -52,27 +53,21 @@
                                     <th>No</th>
                                     <th>NIP</th>
                                     <th>Nama</th>
-                                    <th>Tanggal</th>
-                                    <th>Jam In</th>
-                                    <th>Jam Out</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (empty($rekap)): ?>
                                     <tr>
-                                        <td colspan="7" class="text-center">Tidak ada data</td>
+                                        <td colspan="4" class="text-center">Tidak ada data absensi</td>
                                     </tr>
                                 <?php else: ?>
                                     <?php $no = 1;
                                     foreach ($rekap as $r): ?>
                                         <tr>
                                             <td><?= $no++ ?></td>
-                                            <td><?= $r['nip'] ?></td>
-                                            <td><?= $r['nama'] ?></td>
-                                            <td><?= date('d M Y', strtotime($r['tanggal'])) ?></td>
-                                            <td><?= $r['jam_in'] ?? '-' ?></td>
-                                            <td><?= $r['jam_out'] ?? '-' ?></td>
+                                            <td><?= htmlspecialchars($r['nip']) ?></td>
+                                            <td><?= htmlspecialchars($r['nama']) ?></td>
                                             <td>
                                                 <a href="<?= base_url('absensi/detail_harian/' . $r['nip'] . '?bulan=' . $bulan . '&tahun=' . $tahun) ?>"
                                                     class="btn btn-info btn-sm">
@@ -123,7 +118,7 @@
                                 <div class="form-group">
                                     <label>File Excel</label>
                                     <input type="file" name="file" class="form-control" required>
-                                    <small class="text-danger">Gunakan format sesuai template (Jam In / Jam Out per hari).</small>
+                                    <small class="text-danger">Gunakan format sesuai template (baris IN dan OUT per pegawai).</small>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -135,7 +130,6 @@
                 </div>
             </div>
             <!-- End Modal Import -->
-
         </div>
     </div>
 </div>
