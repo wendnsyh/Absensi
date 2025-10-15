@@ -299,6 +299,7 @@ class Absensi extends CI_Controller
             redirect('absensi/absen_harian');
         }
 
+        // Load Excel
         $spreadsheet = IOFactory::load($file);
         $sheet = $spreadsheet->getActiveSheet();
 
@@ -306,50 +307,58 @@ class Absensi extends CI_Controller
         $bulan = $this->input->post('bulan_impor');
         $tahun = $this->input->post('tahun_impor');
 
-        // Kolom D = tanggal 1, E = tanggal 2, dst
+        // Kolom D = tanggal 1, dst
         $kolom_awal = 'D';
         $kolom_akhir = $sheet->getHighestColumn();
         $baris_terakhir = $sheet->getHighestRow();
 
         $data_absensi_harian = [];
 
-        // Struktur: 
-        // Baris nama = 9, 12, 15, ...
-        // IN = baris+1
-        // OUT = baris+2
-        for ($row = 9; $row <= $baris_terakhir; $row++) {
-            $nama = $sheet->getCell("B$row")->getValue();
-            $nip = $sheet->getCell("C$row")->getValue();
+        // Loop tiap pegawai (setiap 3 baris)
+        for ($row = 9; $row <= $baris_terakhir; $row += 3) {
+            $nama = $sheet->getCell("B$row")->getFormattedValue();
+            $nip  = $sheet->getCell("C$row")->getFormattedValue();
 
-            // Jika ada nama & nip, berarti baris ini pegawai
-            if ($nama && $nip) {
-                $baris_in = $row + 1;  // baris IN
-                $baris_out = $row + 2; // baris OUT
+            // Jika cell nama kosong karena merge, ambil dari baris sebelumnya
+            if (!$nama) {
+                $nama = $sheet->getCell("B" . ($row - 1))->getFormattedValue();
+            }
 
-                $tanggal = 1;
-                $col = $kolom_awal;
+            if (!$nip) {
+                $nip = $sheet->getCell("C" . ($row - 1))->getFormattedValue();
+            }
 
-                // Loop semua tanggal
-                while (Coordinate::columnIndexFromString($col) <= Coordinate::columnIndexFromString($kolom_akhir)) {
-                    $jam_in = $sheet->getCell($col . $baris_in)->getValue();
-                    $jam_out = $sheet->getCell($col . $baris_out)->getValue();
+            // Lewati baris kosong
+            if (empty($nama) && empty($nip)) {
+                continue;
+            }
 
-                    if (!empty($jam_in) || !empty($jam_out)) {
-                        $data_absensi_harian[] = [
-                            'nip' => $nip,
-                            'tanggal' => "$tahun-$bulan-" . str_pad($tanggal, 2, '0', STR_PAD_LEFT),
-                            'jam_in' => $jam_in ?: null,
-                            'jam_out' => $jam_out ?: null
-                        ];
-                    }
+            $baris_in = $row + 1;
+            $baris_out = $row + 2;
 
-                    // Geser ke kolom berikutnya
-                    $tanggal++;
-                    $col = Coordinate::stringFromColumnIndex(Coordinate::columnIndexFromString($col) + 1);
+            // Loop kolom tanggal
+            $kolom_index_awal = Coordinate::columnIndexFromString($kolom_awal);
+            $kolom_index_akhir = Coordinate::columnIndexFromString($kolom_akhir);
+
+            $tanggal = 1;
+
+            for ($col = $kolom_index_awal; $col <= $kolom_index_akhir; $col++) {
+                $colLetter = Coordinate::stringFromColumnIndex($col);
+
+                $jam_in = trim($sheet->getCell($colLetter . $baris_in)->getFormattedValue());
+                $jam_out = trim($sheet->getCell($colLetter . $baris_out)->getFormattedValue());
+
+                if (!empty($jam_in) || !empty($jam_out)) {
+                    $data_absensi_harian[] = [
+                        'nip' => $nip,
+                        'nama' => $nama,
+                        'tanggal' => sprintf('%04d-%02d-%02d', $tahun, $bulan, $tanggal),
+                        'jam_in' => $jam_in ?: null,
+                        'jam_out' => $jam_out ?: null
+                    ];
                 }
 
-                // Lompat ke pegawai berikutnya (3 baris berikutnya)
-                $row += 2;
+                $tanggal++;
             }
         }
 

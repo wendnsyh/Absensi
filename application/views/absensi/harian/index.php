@@ -66,8 +66,8 @@
                                     foreach ($rekap as $r): ?>
                                         <tr>
                                             <td><?= $no++ ?></td>
-                                            <td><?= htmlspecialchars($r['nip']) ?></td>
-                                            <td><?= htmlspecialchars($r['nama']) ?></td>
+                                            <td><?= ($r['nip']) ?></td>
+                                            <td><?= ($r['nama']) ?></td>
                                             <td>
                                                 <a href="<?= base_url('absensi/detail_harian/' . $r['nip'] . '?bulan=' . $bulan . '&tahun=' . $tahun) ?>"
                                                     class="btn btn-info btn-sm">
