@@ -9,7 +9,7 @@
                     <li class="nav-item"><a href="<?= base_url('absensi/absen_harian') ?>">Absensi Harian</a></li>
                 </ul>
             </div>
-            
+
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
@@ -43,7 +43,15 @@
                                         <div class="icon-big text-warning"><i class="flaticon-time"></i></div>
                                     </div>
                                     <h6 class="text-muted">Total Menit Terlambat</h6>
-                                    <h4 class="font-weight-bold text-warning"><?= $summary['total_menit_telat'] ?> Menit</h4>
+                                    <h4 class="font-weight-bold text-warning">
+                                        <?= $summary['total_menit_telat'] ?> Menit<br>
+                                        <small>(
+                                            <?= $summary['konversi_telat']['hari'] ?> Hari,
+                                            <?= $summary['konversi_telat']['jam'] ?> Jam,
+                                            <?= $summary['konversi_telat']['menit'] ?> Menit
+                                            )</small>
+                                    </h4>
+
                                 </div>
                             </div>
                         </div>

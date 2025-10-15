@@ -274,6 +274,7 @@ class Absensi extends CI_Controller
         $this->pagination->initialize($config);
 
         $data['start'] = $this->uri->segment(3) ?: 0;
+        $data['absensi_harian'] = $this->AbsensiHarian_model->get_all($config['per_page'], $data['start'], $bulan_param, $tahun_param, $keyword); // Kirim keyword ke model
         $data['pegawai'] = $this->Absensi_model->get_all_pegawai();
 
 
@@ -281,6 +282,7 @@ class Absensi extends CI_Controller
         $data['tahun'] = $tahun_param;
         // reuse the previously fetched rekap data to avoid duplicate queries
         $data['rekap'] = $all_rekap;
+
 
 
         $this->load->view('template/header', $data);
@@ -377,14 +379,13 @@ class Absensi extends CI_Controller
         $bulan = (int) ($this->input->get('bulan') ?: date('n'));
         $tahun = (int) ($this->input->get('tahun') ?: date('Y'));
 
-        // Ambil absensi dari model
         $absensi = $this->AbsensiHarian_model->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
 
         // Jam standar
         $jam_standar_in = strtotime('07:30:00');
         $jam_standar_out = strtotime('16:00:00');
+        $menit_per_hari = 8.5 * 60; // 510 menit
 
-        // Inisialisasi ringkasan
         $summary = [
             'total_hadir' => 0,
             'total_tidak_finger' => 0,
@@ -398,9 +399,7 @@ class Absensi extends CI_Controller
             ]
         ];
 
-        // Proses tiap record
         foreach ($absensi as &$a) {
-            // normalisasi jam (string kosong -> null)
             $a['jam_in'] = isset($a['jam_in']) && $a['jam_in'] !== '' ? $a['jam_in'] : null;
             $a['jam_out'] = isset($a['jam_out']) && $a['jam_out'] !== '' ? $a['jam_out'] : null;
 
@@ -408,16 +407,12 @@ class Absensi extends CI_Controller
             $a['status_pulang'] = '-';
             $a['menit_telat'] = 0;
 
-            // Jika tidak ada jam_in dan jam_out -> skip (tidak hadir)
             if (empty($a['jam_in']) && empty($a['jam_out'])) {
-                // tidak hitung sebagai hadir
                 continue;
             }
 
-            // Hitung hadir
             $summary['total_hadir']++;
 
-            // Jika jam_in == jam_out -> tidak finger
             if ($a['jam_in'] !== null && $a['jam_out'] !== null && trim($a['jam_in']) === trim($a['jam_out'])) {
                 $a['kategori_telat'] = 'Tidak Finger';
                 $a['status_pulang'] = 'Tidak Finger';
@@ -427,19 +422,12 @@ class Absensi extends CI_Controller
                 continue;
             }
 
-            // Hitung menit terlambat (hanya jika jam_in ada)
             if (!empty($a['jam_in'])) {
-                // jam_in bisa berbentuk "07:45" atau Excel time; gunakan strtotime terlebih dahulu
                 $jam_in_time = @strtotime($a['jam_in']);
-                if ($jam_in_time === false) {
-                    // jika gagal, set menit_telat = 0 dan kategori '-'
-                    $a['menit_telat'] = 0;
-                    $a['kategori_telat'] = '-';
-                } else {
+                if ($jam_in_time !== false) {
                     $selisih_menit = round(($jam_in_time - $jam_standar_in) / 60);
                     $a['menit_telat'] = $selisih_menit > 0 ? $selisih_menit : 0;
 
-                    // kategorikan
                     if ($a['menit_telat'] === 0) {
                         $a['kategori_telat'] = 'Tepat Waktu';
                         $summary['kategori']['Tepat Waktu']++;
@@ -458,22 +446,31 @@ class Absensi extends CI_Controller
                 }
             }
 
-            // Status pulang (jika jam_out ada)
             if (!empty($a['jam_out'])) {
                 $jam_out_time = @strtotime($a['jam_out']);
-                if ($jam_out_time === false) {
-                    $a['status_pulang'] = '-';
-                } else {
+                if ($jam_out_time !== false) {
                     $a['status_pulang'] = ($jam_out_time < $jam_standar_out) ? 'Pulang Cepat' : 'Normal';
                 }
             }
         }
-        unset($a); // safety for reference
+        unset($a);
 
-        // Sortir absensi berdasarkan tanggal asc (jika model belum menjamin)
         usort($absensi, function ($x, $y) {
             return strtotime($x['tanggal']) <=> strtotime($y['tanggal']);
         });
+
+        // 🔹 Konversi total menit terlambat ke hari, jam, menit kerja
+        $total_menit = $summary['total_menit_telat'];
+        $hari = floor($total_menit / $menit_per_hari);
+        $sisa_menit = $total_menit % $menit_per_hari;
+        $jam = floor($sisa_menit / 60);
+        $menit = $sisa_menit % 60;
+
+        $summary['konversi_telat'] = [
+            'hari' => $hari,
+            'jam' => $jam,
+            'menit' => $menit
+        ];
 
         $data = [
             'absensi' => $absensi,
@@ -482,7 +479,7 @@ class Absensi extends CI_Controller
             'pegawai' => !empty($absensi) ? $absensi[0] : null,
             'summary' => $summary
         ];
-        
+
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['title'] = "Detail Absensi Harian";
         $this->load->view('template/header', $data);
