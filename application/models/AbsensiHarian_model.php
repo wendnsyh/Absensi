@@ -46,4 +46,13 @@ class AbsensiHarian_model extends CI_Model
         }
         return false;
     }
+
+    public function get_by_nip_bulan_tahun($nip, $bulan, $tahun)
+    {
+        $this->db->where('nip', $nip);
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        $this->db->order_by('tanggal', 'ASC');
+        return $this->db->get($this->table)->result_array();
+    }
 }

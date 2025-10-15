@@ -374,22 +374,117 @@ class Absensi extends CI_Controller
     }
     public function detail_harian($nip)
     {
-        $bulan = $this->input->get('bulan') ?: date('n');
-        $tahun = $this->input->get('tahun') ?: date('Y');
+        $bulan = (int) ($this->input->get('bulan') ?: date('n'));
+        $tahun = (int) ($this->input->get('tahun') ?: date('Y'));
 
+        // Ambil absensi dari model
+        $absensi = $this->AbsensiHarian_model->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
+
+        // Jam standar
+        $jam_standar_in = strtotime('07:30:00');
+        $jam_standar_out = strtotime('16:00:00');
+
+        // Inisialisasi ringkasan
+        $summary = [
+            'total_hadir' => 0,
+            'total_tidak_finger' => 0,
+            'total_menit_telat' => 0,
+            'kategori' => [
+                'Tepat Waktu' => 0,
+                'Telat < 30 Menit' => 0,
+                'Telat 30–90 Menit' => 0,
+                'Telat > 90 Menit' => 0,
+                'Tidak Finger' => 0
+            ]
+        ];
+
+        // Proses tiap record
+        foreach ($absensi as &$a) {
+            // normalisasi jam (string kosong -> null)
+            $a['jam_in'] = isset($a['jam_in']) && $a['jam_in'] !== '' ? $a['jam_in'] : null;
+            $a['jam_out'] = isset($a['jam_out']) && $a['jam_out'] !== '' ? $a['jam_out'] : null;
+
+            $a['kategori_telat'] = '-';
+            $a['status_pulang'] = '-';
+            $a['menit_telat'] = 0;
+
+            // Jika tidak ada jam_in dan jam_out -> skip (tidak hadir)
+            if (empty($a['jam_in']) && empty($a['jam_out'])) {
+                // tidak hitung sebagai hadir
+                continue;
+            }
+
+            // Hitung hadir
+            $summary['total_hadir']++;
+
+            // Jika jam_in == jam_out -> tidak finger
+            if ($a['jam_in'] !== null && $a['jam_out'] !== null && trim($a['jam_in']) === trim($a['jam_out'])) {
+                $a['kategori_telat'] = 'Tidak Finger';
+                $a['status_pulang'] = 'Tidak Finger';
+                $a['menit_telat'] = 0;
+                $summary['kategori']['Tidak Finger']++;
+                $summary['total_tidak_finger']++;
+                continue;
+            }
+
+            // Hitung menit terlambat (hanya jika jam_in ada)
+            if (!empty($a['jam_in'])) {
+                // jam_in bisa berbentuk "07:45" atau Excel time; gunakan strtotime terlebih dahulu
+                $jam_in_time = @strtotime($a['jam_in']);
+                if ($jam_in_time === false) {
+                    // jika gagal, set menit_telat = 0 dan kategori '-'
+                    $a['menit_telat'] = 0;
+                    $a['kategori_telat'] = '-';
+                } else {
+                    $selisih_menit = round(($jam_in_time - $jam_standar_in) / 60);
+                    $a['menit_telat'] = $selisih_menit > 0 ? $selisih_menit : 0;
+
+                    // kategorikan
+                    if ($a['menit_telat'] === 0) {
+                        $a['kategori_telat'] = 'Tepat Waktu';
+                        $summary['kategori']['Tepat Waktu']++;
+                    } elseif ($a['menit_telat'] > 0 && $a['menit_telat'] <= 30) {
+                        $a['kategori_telat'] = 'Telat < 30 Menit';
+                        $summary['kategori']['Telat < 30 Menit']++;
+                    } elseif ($a['menit_telat'] > 30 && $a['menit_telat'] <= 90) {
+                        $a['kategori_telat'] = 'Telat 30–90 Menit';
+                        $summary['kategori']['Telat 30–90 Menit']++;
+                    } else {
+                        $a['kategori_telat'] = 'Telat > 90 Menit';
+                        $summary['kategori']['Telat > 90 Menit']++;
+                    }
+
+                    $summary['total_menit_telat'] += $a['menit_telat'];
+                }
+            }
+
+            // Status pulang (jika jam_out ada)
+            if (!empty($a['jam_out'])) {
+                $jam_out_time = @strtotime($a['jam_out']);
+                if ($jam_out_time === false) {
+                    $a['status_pulang'] = '-';
+                } else {
+                    $a['status_pulang'] = ($jam_out_time < $jam_standar_out) ? 'Pulang Cepat' : 'Normal';
+                }
+            }
+        }
+        unset($a); // safety for reference
+
+        // Sortir absensi berdasarkan tanggal asc (jika model belum menjamin)
+        usort($absensi, function ($x, $y) {
+            return strtotime($x['tanggal']) <=> strtotime($y['tanggal']);
+        });
+
+        $data = [
+            'absensi' => $absensi,
+            'bulan' => $bulan,
+            'tahun' => $tahun,
+            'pegawai' => !empty($absensi) ? $absensi[0] : null,
+            'summary' => $summary
+        ];
+        
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-        $data['title'] = "Detail Absensi Pegawai";
-
-        // Ambil data detail absensi pegawai dalam bulan & tahun tertentu
-        $data['detail'] = $this->AbsensiHarian_model->get_detail_pegawai($nip, $bulan, $tahun);
-
-        // Ambil info pegawai (nama, nip)
-        $data['pegawai'] = !empty($data['detail']) ? $data['detail'][0] : null;
-
-        $data['bulan'] = $bulan;
-        $data['tahun'] = $tahun;
-
-        // Load view
+        $data['title'] = "Detail Absensi Harian";
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);
         $this->load->view('template/sidebar', $data);
