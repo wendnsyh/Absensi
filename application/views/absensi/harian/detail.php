@@ -96,6 +96,7 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Tanggal</th>
+                                    <th>Hari</th>
                                     <th>Jam In</th>
                                     <th>Jam Out</th>
                                     <th>Kategori Keterlambatan</th>
@@ -140,6 +141,7 @@
                                         <tr style="<?= $row_style ?>">
                                             <td><?= $no++ ?></td>
                                             <td><?= date('d M Y', strtotime($a['tanggal'])) ?></td>
+                                            <td><?= $a['hari'] ?: '-' ?></td>
                                             <td><?= $a['jam_in'] ?: '-' ?></td>
                                             <td><?= $a['jam_out'] ?: '-' ?></td>
                                             <td><span class="badge badge-<?= $badge ?>"><?= $a['kategori_telat'] ?></span></td>

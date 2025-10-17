@@ -315,11 +315,9 @@ class Absensi extends CI_Controller
             $in_row = isset($rows[$i + 1]) ? $rows[$i + 1] : [];
             $out_row = isset($rows[$i + 2]) ? $rows[$i + 2] : [];
 
-            // Nama dan NIP diambil dari kolom 1 dan 2
             $nama = trim($gabung_row[1]);
             $nip = trim($gabung_row[2]);
 
-            // Skip jika tidak ada NIP
             if (empty($nip)) continue;
 
             for ($col = 4; $col < count($tanggal_row); $col++) {
@@ -331,7 +329,7 @@ class Absensi extends CI_Controller
                 $jam_in = '';
                 $jam_out = '';
 
-                // Gabungan (misal "07:12 16:24")
+                // Gabungan "07:12 16:24"
                 if (!empty($gabung_row[$col])) {
                     $times = preg_split('/\s+/', trim($gabung_row[$col]));
                     if (count($times) === 2) {
@@ -340,11 +338,10 @@ class Absensi extends CI_Controller
                     }
                 }
 
-                // Jika jam_in atau jam_out masih kosong, isi dari baris in/out
                 if (empty($jam_in) && !empty($in_row[$col])) $jam_in = trim($in_row[$col]);
                 if (empty($jam_out) && !empty($out_row[$col])) $jam_out = trim($out_row[$col]);
 
-                // Format tanggal lengkap
+                // Format tanggal
                 $tgl_fix = date('Y-m-d', strtotime("$tahun-$bulan-$tanggal"));
 
                 $data_absensi_harian[] = [
@@ -374,10 +371,7 @@ class Absensi extends CI_Controller
         $tahun = $tahun ?? date('Y');
         $this->load->model('AbsensiHarian_model');
 
-        // Ambil data pegawai
         $pegawai = $this->AbsensiHarian_model->get_pegawai_by_nip($nip);
-
-        // Ambil data absensi dari database
         $data_absen = $this->AbsensiHarian_model->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
 
         $absensi = [];
@@ -397,12 +391,20 @@ class Absensi extends CI_Controller
 
         foreach ($data_absen as $row) {
             $tanggal = $row['tanggal'];
-            $hari = date('N', strtotime($tanggal)); // 1=Senin, ..., 7=Minggu
+            $hari_db = $row['hari']; // dari database (hasil impor)
+            $hari_num = date('N', strtotime($tanggal));
 
-            // Cek Sabtu/Minggu (libur)
-            if ($hari == 6 || $hari == 7) {
+            // Jika kosong, fallback ke nama hari otomatis
+            if (empty($hari_db)) {
+                $hari = date('l', strtotime($tanggal));
+            } else {
+                $hari = $hari_db;
+            }
+
+            if ($hari_num == 6 || $hari_num == 7) {
                 $absensi[] = [
                     'tanggal' => $tanggal,
+                    'hari' => $hari,
                     'jam_in' => '-',
                     'jam_out' => '-',
                     'kategori_telat' => 'Libur',
@@ -413,14 +415,12 @@ class Absensi extends CI_Controller
                 continue;
             }
 
-            // Jika jam in dan jam out sama → tidak finger
             if ($row['jam_in'] == $row['jam_out']) {
                 $kategori = 'Tidak Finger';
                 $status_pulang = 'Tidak Finger';
                 $menit_telat = 0;
                 $summary['total_tidak_finger']++;
             } else {
-                // Hitung keterlambatan dari jam 07:30
                 $jam_normal = strtotime("07:30");
                 $jam_in = strtotime($row['jam_in']);
                 $selisih = max(0, round(($jam_in - $jam_normal) / 60));
@@ -446,6 +446,7 @@ class Absensi extends CI_Controller
 
             $absensi[] = [
                 'tanggal' => $tanggal,
+                'hari' => $hari,
                 'jam_in' => $row['jam_in'],
                 'jam_out' => $row['jam_out'],
                 'kategori_telat' => $kategori,
@@ -454,7 +455,6 @@ class Absensi extends CI_Controller
             ];
         }
 
-        // Konversi total menit telat ke hari/jam/menit
         $total = $summary['total_menit_telat'];
         $summary['konversi_telat'] = [
             'hari' => floor($total / (8 * 60)),
@@ -462,7 +462,6 @@ class Absensi extends CI_Controller
             'menit' => $total % 60
         ];
 
-        // Urutkan berdasarkan tanggal
         usort($absensi, function ($a, $b) {
             return strtotime($a['tanggal']) <=> strtotime($b['tanggal']);
         });
@@ -472,10 +471,10 @@ class Absensi extends CI_Controller
             'absensi' => $absensi,
             'summary' => $summary,
             'bulan' => $bulan,
-            'tahun' => $tahun
+            'tahun' => $tahun,
+            'title' => 'Detail Absensi Harian',
+            'user' => $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array()
         ];
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-        $data['title'] = "Detail Absensi Harian";
 
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);
