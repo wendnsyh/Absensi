@@ -69,10 +69,10 @@
                                             <td><?= ($r['nip']) ?></td>
                                             <td><?= ($r['nama']) ?></td>
                                             <td>
-                                                <a href="<?= base_url('absensi/detail_harian/' . $r['nip'] . '?bulan=' . $bulan . '&tahun=' . $tahun) ?>"
-                                                    class="btn btn-info btn-sm">
+                                                <a href="<?= base_url('absensi/detail_harian/' . $r['nip'] . '/' . $bulan . '/' . $tahun) ?>" class="btn btn-info btn-sm">
                                                     <i class="fas fa-eye"></i> Detail
                                                 </a>
+
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

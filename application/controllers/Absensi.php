@@ -295,193 +295,188 @@ class Absensi extends CI_Controller
     public function import_harian()
     {
         $file = $_FILES['file']['tmp_name'];
-
-        if (!$file) {
-            $this->session->set_flashdata('message', '<div class="alert alert-danger">File tidak ditemukan!</div>');
-            redirect('absensi/absen_harian');
-        }
-
-        // Load Excel
-        $spreadsheet = IOFactory::load($file);
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
         $sheet = $spreadsheet->getActiveSheet();
+        $rows = $sheet->toArray();
 
-        // Ambil bulan & tahun dari form
         $bulan = $this->input->post('bulan_impor');
         $tahun = $this->input->post('tahun_impor');
 
-        // Kolom D = tanggal 1, dst
-        $kolom_awal = 'D';
-        $kolom_akhir = $sheet->getHighestColumn();
-        $baris_terakhir = $sheet->getHighestRow();
-
         $data_absensi_harian = [];
 
-        // Loop tiap pegawai (setiap 3 baris)
-        for ($row = 9; $row <= $baris_terakhir; $row += 3) {
-            $nama = $sheet->getCell("B$row")->getFormattedValue();
-            $nip  = $sheet->getCell("C$row")->getFormattedValue();
+        // Baris ke-7: tanggal
+        $tanggal_row = $rows[6];
+        // Baris ke-8: hari
+        $hari_row = $rows[7];
 
-            // Jika cell nama kosong karena merge, ambil dari baris sebelumnya
-            if (!$nama) {
-                $nama = $sheet->getCell("B" . ($row - 1))->getFormattedValue();
-            }
+        // Data pegawai dimulai dari baris ke-9
+        for ($i = 8; $i < count($rows); $i += 3) {
+            $gabung_row = $rows[$i];
+            $in_row = isset($rows[$i + 1]) ? $rows[$i + 1] : [];
+            $out_row = isset($rows[$i + 2]) ? $rows[$i + 2] : [];
 
-            if (!$nip) {
-                $nip = $sheet->getCell("C" . ($row - 1))->getFormattedValue();
-            }
+            // Nama dan NIP diambil dari kolom 1 dan 2
+            $nama = trim($gabung_row[1]);
+            $nip = trim($gabung_row[2]);
 
-            // Lewati baris kosong
-            if (empty($nama) && empty($nip)) {
-                continue;
-            }
+            // Skip jika tidak ada NIP
+            if (empty($nip)) continue;
 
-            $baris_in = $row + 1;
-            $baris_out = $row + 2;
+            for ($col = 4; $col < count($tanggal_row); $col++) {
+                $tanggal = trim($tanggal_row[$col]);
+                $hari = ucfirst(trim($hari_row[$col]));
 
-            // Loop kolom tanggal
-            $kolom_index_awal = Coordinate::columnIndexFromString($kolom_awal);
-            $kolom_index_akhir = Coordinate::columnIndexFromString($kolom_akhir);
+                if (empty($tanggal)) continue;
 
-            $tanggal = 1;
+                $jam_in = '';
+                $jam_out = '';
 
-            for ($col = $kolom_index_awal; $col <= $kolom_index_akhir; $col++) {
-                $colLetter = Coordinate::stringFromColumnIndex($col);
-
-                $jam_in = trim($sheet->getCell($colLetter . $baris_in)->getFormattedValue());
-                $jam_out = trim($sheet->getCell($colLetter . $baris_out)->getFormattedValue());
-
-                if (!empty($jam_in) || !empty($jam_out)) {
-                    $data_absensi_harian[] = [
-                        'nip' => $nip,
-                        'nama' => $nama,
-                        'tanggal' => sprintf('%04d-%02d-%02d', $tahun, $bulan, $tanggal),
-                        'jam_in' => $jam_in ?: null,
-                        'jam_out' => $jam_out ?: null
-                    ];
+                // Gabungan (misal "07:12 16:24")
+                if (!empty($gabung_row[$col])) {
+                    $times = preg_split('/\s+/', trim($gabung_row[$col]));
+                    if (count($times) === 2) {
+                        $jam_in = $times[0];
+                        $jam_out = $times[1];
+                    }
                 }
 
-                $tanggal++;
+                // Jika jam_in atau jam_out masih kosong, isi dari baris in/out
+                if (empty($jam_in) && !empty($in_row[$col])) $jam_in = trim($in_row[$col]);
+                if (empty($jam_out) && !empty($out_row[$col])) $jam_out = trim($out_row[$col]);
+
+                // Format tanggal lengkap
+                $tgl_fix = date('Y-m-d', strtotime("$tahun-$bulan-$tanggal"));
+
+                $data_absensi_harian[] = [
+                    'nip' => $nip,
+                    'nama' => $nama,
+                    'tanggal' => $tgl_fix,
+                    'hari' => $hari,
+                    'jam_in' => $jam_in ?: null,
+                    'jam_out' => $jam_out ?: null
+                ];
             }
         }
 
-        // Simpan ke DB
         if (!empty($data_absensi_harian)) {
             $this->AbsensiHarian_model->insert_batch($data_absensi_harian);
-            $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi harian berhasil diimpor!</div>');
+            $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi berhasil diimpor!</div>');
         } else {
-            $this->session->set_flashdata('message', '<div class="alert alert-danger">Tidak ada data valid yang ditemukan di file.</div>');
+            $this->session->set_flashdata('message', '<div class="alert alert-warning">Tidak ada data valid ditemukan di file.</div>');
         }
 
         redirect('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun);
     }
-    public function detail_harian($nip)
+
+    public function detail_harian($nip, $bulan, $tahun)
     {
-        $bulan = (int) ($this->input->get('bulan') ?: date('n'));
-        $tahun = (int) ($this->input->get('tahun') ?: date('Y'));
+        $bulan = $bulan ?? date('m');
+        $tahun = $tahun ?? date('Y');
+        $this->load->model('AbsensiHarian_model');
 
-        $absensi = $this->AbsensiHarian_model->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
+        // Ambil data pegawai
+        $pegawai = $this->AbsensiHarian_model->get_pegawai_by_nip($nip);
 
-        // Jam standar
-        $jam_standar_in = strtotime('07:30:00');
-        $jam_standar_out = strtotime('16:00:00');
-        $menit_per_hari = 8.5 * 60; // 510 menit
+        // Ambil data absensi dari database
+        $data_absen = $this->AbsensiHarian_model->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
 
+        $absensi = [];
         $summary = [
             'total_hadir' => 0,
-            'total_tidak_finger' => 0,
             'total_menit_telat' => 0,
+            'total_tidak_finger' => 0,
             'kategori' => [
                 'Tepat Waktu' => 0,
                 'Telat < 30 Menit' => 0,
                 'Telat 30–90 Menit' => 0,
                 'Telat > 90 Menit' => 0,
-                'Tidak Finger' => 0
+                'Tidak Finger' => 0,
+                'Libur' => 0
             ]
         ];
 
-        foreach ($absensi as &$a) {
-            $a['jam_in'] = isset($a['jam_in']) && $a['jam_in'] !== '' ? $a['jam_in'] : null;
-            $a['jam_out'] = isset($a['jam_out']) && $a['jam_out'] !== '' ? $a['jam_out'] : null;
+        foreach ($data_absen as $row) {
+            $tanggal = $row['tanggal'];
+            $hari = date('N', strtotime($tanggal)); // 1=Senin, ..., 7=Minggu
 
-            $a['kategori_telat'] = '-';
-            $a['status_pulang'] = '-';
-            $a['menit_telat'] = 0;
-
-            if (empty($a['jam_in']) && empty($a['jam_out'])) {
+            // Cek Sabtu/Minggu (libur)
+            if ($hari == 6 || $hari == 7) {
+                $absensi[] = [
+                    'tanggal' => $tanggal,
+                    'jam_in' => '-',
+                    'jam_out' => '-',
+                    'kategori_telat' => 'Libur',
+                    'menit_telat' => 0,
+                    'status_pulang' => 'Libur'
+                ];
+                $summary['kategori']['Libur']++;
                 continue;
             }
 
-            $summary['total_hadir']++;
-
-            if ($a['jam_in'] !== null && $a['jam_out'] !== null && trim($a['jam_in']) === trim($a['jam_out'])) {
-                $a['kategori_telat'] = 'Tidak Finger';
-                $a['status_pulang'] = 'Tidak Finger';
-                $a['menit_telat'] = 0;
-                $summary['kategori']['Tidak Finger']++;
+            // Jika jam in dan jam out sama → tidak finger
+            if ($row['jam_in'] == $row['jam_out']) {
+                $kategori = 'Tidak Finger';
+                $status_pulang = 'Tidak Finger';
+                $menit_telat = 0;
                 $summary['total_tidak_finger']++;
-                continue;
-            }
+            } else {
+                // Hitung keterlambatan dari jam 07:30
+                $jam_normal = strtotime("07:30");
+                $jam_in = strtotime($row['jam_in']);
+                $selisih = max(0, round(($jam_in - $jam_normal) / 60));
 
-            if (!empty($a['jam_in'])) {
-                $jam_in_time = @strtotime($a['jam_in']);
-                if ($jam_in_time !== false) {
-                    $selisih_menit = round(($jam_in_time - $jam_standar_in) / 60);
-                    $a['menit_telat'] = $selisih_menit > 0 ? $selisih_menit : 0;
-
-                    if ($a['menit_telat'] === 0) {
-                        $a['kategori_telat'] = 'Tepat Waktu';
-                        $summary['kategori']['Tepat Waktu']++;
-                    } elseif ($a['menit_telat'] > 0 && $a['menit_telat'] <= 30) {
-                        $a['kategori_telat'] = 'Telat < 30 Menit';
-                        $summary['kategori']['Telat < 30 Menit']++;
-                    } elseif ($a['menit_telat'] > 30 && $a['menit_telat'] <= 90) {
-                        $a['kategori_telat'] = 'Telat 30–90 Menit';
-                        $summary['kategori']['Telat 30–90 Menit']++;
-                    } else {
-                        $a['kategori_telat'] = 'Telat > 90 Menit';
-                        $summary['kategori']['Telat > 90 Menit']++;
-                    }
-
-                    $summary['total_menit_telat'] += $a['menit_telat'];
+                if ($selisih == 0) {
+                    $kategori = 'Tepat Waktu';
+                } elseif ($selisih < 30) {
+                    $kategori = 'Telat < 30 Menit';
+                } elseif ($selisih <= 90) {
+                    $kategori = 'Telat 30–90 Menit';
+                } else {
+                    $kategori = 'Telat > 90 Menit';
                 }
+
+                $status_pulang = 'Normal';
+                $menit_telat = $selisih;
+
+                $summary['total_menit_telat'] += $menit_telat;
+                $summary['total_hadir']++;
             }
 
-            if (!empty($a['jam_out'])) {
-                $jam_out_time = @strtotime($a['jam_out']);
-                if ($jam_out_time !== false) {
-                    $a['status_pulang'] = ($jam_out_time < $jam_standar_out) ? 'Pulang Cepat' : 'Normal';
-                }
-            }
+            $summary['kategori'][$kategori]++;
+
+            $absensi[] = [
+                'tanggal' => $tanggal,
+                'jam_in' => $row['jam_in'],
+                'jam_out' => $row['jam_out'],
+                'kategori_telat' => $kategori,
+                'menit_telat' => $menit_telat,
+                'status_pulang' => $status_pulang
+            ];
         }
-        unset($a);
 
-        usort($absensi, function ($x, $y) {
-            return strtotime($x['tanggal']) <=> strtotime($y['tanggal']);
+        // Konversi total menit telat ke hari/jam/menit
+        $total = $summary['total_menit_telat'];
+        $summary['konversi_telat'] = [
+            'hari' => floor($total / (8 * 60)),
+            'jam' => floor(($total % (8 * 60)) / 60),
+            'menit' => $total % 60
+        ];
+
+        // Urutkan berdasarkan tanggal
+        usort($absensi, function ($a, $b) {
+            return strtotime($a['tanggal']) <=> strtotime($b['tanggal']);
         });
 
-        // 🔹 Konversi total menit terlambat ke hari, jam, menit kerja
-        $total_menit = $summary['total_menit_telat'];
-        $hari = floor($total_menit / $menit_per_hari);
-        $sisa_menit = $total_menit % $menit_per_hari;
-        $jam = floor($sisa_menit / 60);
-        $menit = $sisa_menit % 60;
-
-        $summary['konversi_telat'] = [
-            'hari' => $hari,
-            'jam' => $jam,
-            'menit' => $menit
-        ];
-
         $data = [
+            'pegawai' => $pegawai,
             'absensi' => $absensi,
+            'summary' => $summary,
             'bulan' => $bulan,
-            'tahun' => $tahun,
-            'pegawai' => !empty($absensi) ? $absensi[0] : null,
-            'summary' => $summary
+            'tahun' => $tahun
         ];
-
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['title'] = "Detail Absensi Harian";
+
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);
         $this->load->view('template/sidebar', $data);

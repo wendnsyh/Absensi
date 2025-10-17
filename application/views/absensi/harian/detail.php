@@ -14,7 +14,10 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
                         <h5>Data Pegawai: <strong><?= $pegawai ? htmlspecialchars($pegawai['nama']) : '-' ?></strong></h5>
-                        <small>NIP: <?= $pegawai ? htmlspecialchars($pegawai['nip']) : '-' ?> — Periode: <?= date("F Y", strtotime("{$tahun}-{$bulan}-01")) ?></small>
+                        <small>
+                            NIP: <?= $pegawai ? htmlspecialchars($pegawai['nip']) : '-' ?> —
+                            Periode: <?= date("F Y", strtotime("{$tahun}-{$bulan}-01")) ?>
+                        </small>
                     </div>
                     <div>
                         <a href="<?= base_url('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun) ?>" class="btn btn-secondary btn-sm">
@@ -36,6 +39,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-md-3">
                             <div class="card p-2 text-center">
                                 <div class="card-body">
@@ -51,10 +55,10 @@
                                             <?= $summary['konversi_telat']['menit'] ?> Menit
                                             )</small>
                                     </h4>
-
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-md-3">
                             <div class="card p-2 text-center">
                                 <div class="card-body">
@@ -66,6 +70,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-md-3">
                             <div class="card p-2 text-center">
                                 <div class="card-body">
@@ -76,7 +81,7 @@
                                     <ul class="list-unstyled text-left mt-2" style="font-size: 0.8rem;">
                                         <li>Tepat Waktu: <?= $summary['kategori']['Tepat Waktu'] ?></li>
                                         <li>Telat &lt;30m: <?= $summary['kategori']['Telat < 30 Menit'] ?></li>
-                                        <li>Telat 30-90m: <?= $summary['kategori']['Telat 30–90 Menit'] ?></li>
+                                        <li>Telat 30–90m: <?= $summary['kategori']['Telat 30–90 Menit'] ?></li>
                                         <li>Telat &gt;90m: <?= $summary['kategori']['Telat > 90 Menit'] ?></li>
                                         <li>Tidak Finger: <?= $summary['kategori']['Tidak Finger'] ?></li>
                                     </ul>
@@ -106,7 +111,7 @@
                                 <?php else: $no = 1; ?>
                                     <?php foreach ($absensi as $a): ?>
                                         <?php
-                                        // badge color based on kategori
+                                        // Warna badge berdasarkan kategori
                                         $badge = 'secondary';
                                         switch ($a['kategori_telat']) {
                                             case 'Tepat Waktu':
@@ -124,9 +129,15 @@
                                             case 'Tidak Finger':
                                                 $badge = 'secondary';
                                                 break;
+                                            case 'Libur':
+                                                $badge = 'info';
+                                                break;
                                         }
+
+                                        // Gaya baris libur
+                                        $row_style = ($a['kategori_telat'] == 'Libur') ? 'background-color: #f0f0f0; font-style: italic;' : '';
                                         ?>
-                                        <tr>
+                                        <tr style="<?= $row_style ?>">
                                             <td><?= $no++ ?></td>
                                             <td><?= date('d M Y', strtotime($a['tanggal'])) ?></td>
                                             <td><?= $a['jam_in'] ?: '-' ?></td>

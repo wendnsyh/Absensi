@@ -122,4 +122,9 @@ class Absensi_model extends CI_Model
     {
         return $this->db->count_all('pegawai');
     }
+     public function get_pegawai_by_nip($nip)
+    {
+        $this->db->where('nip', $nip);
+        return $this->db->get('pegawai')->row_array();
+    }
 }
