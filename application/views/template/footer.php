@@ -1,3 +1,8 @@
+<!--   Dashboard  -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <!--   Core JS Files   -->
 <script src="<?= base_url('assets/') ?>/atlantis/js/core/jquery.3.2.1.min.js"></script>
 <script src="<?= base_url('assets/') ?>/atlantis/js/core/popper.min.js"></script>

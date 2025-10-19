@@ -1,134 +1,163 @@
+<!-- dashboard/index.php -->
 <div class="main-panel">
     <div class="content">
         <div class="page-inner">
             <div class="page-header">
-                <h4 class="page-title">Dashboard</h4>
+                <h4 class="page-title"><?= $title ?></h4>
+            </div>
+            <!-- Filter Bulan & Tahun -->
+            <form method="get" class="mb-4">
+                <div class="row">
+                    <div class="col-md-3">
+                        <select name="bulan" class="form-control">
+                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                                <option value="<?= sprintf('%02d', $i) ?>" <?= ($bulan == sprintf('%02d', $i)) ? 'selected' : '' ?>>
+                                    <?= date("F", mktime(0, 0, 0, $i, 1)) ?>
+                                </option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select name="tahun" class="form-control">
+                            <?php for ($y = date('Y') - 2; $y <= date('Y') + 1; $y++): ?>
+                                <option value="<?= $y ?>" <?= ($tahun == $y) ? 'selected' : '' ?>><?= $y ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter"></i> Tampilkan
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="row">
+                <?php
+                $colors = [
+                    'Tepat Waktu' => 'info',
+                    'Telat < 30 Menit' => 'warning',
+                    'Telat 30–90 Menit' => 'danger',
+                    'Telat > 90 Menit' => 'dark',
+                    'Tidak Finger' => 'secondary',
+                    'Libur' => 'primary',
+                ];
+                foreach ($summary as $label => $value): ?>
+                    <div class="col-sm-6 col-lg-4">
+                        <div class="card card-stats card-round <?= $colors[$label] ?>">
+                            <div class="card-body ">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <h6 class="text-light"><?= $label ?></h6>
+                                        <h3 class="text-light"><?= $value ?></h3>
+                                    </div>
+                                    <div class="col-auto">
+                                        <div class="icon icon-shape bg-light text-<?= $colors[$label] ?> rounded-circle shadow">
+                                            <i class="fa fa-calendar-alt"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
             </div>
 
             <div class="row">
-                <div class="col-sm-6 col-md-3">
-                    <div class="card card-stats card-primary card-round">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-5">
-                                    <div class="icon-big text-center">
-                                        <i class="flaticon-users"></i>
-                                    </div>
-                                </div>
-                                <div class="col-7 col-stats">
-                                    <div class="numbers">
-                                        <p class="card-category">Total Pegawai</p>
-                                        <h4 class="card-title"><?= $total_pegawai; ?></h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <div class="card card-stats card-success card-round">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-5">
-                                    <div class="icon-big text-center">
-                                        <i class="flaticon-check"></i>
-                                    </div>
-                                </div>
-                                <div class="col-7 col-stats">
-                                    <div class="numbers">
-                                        <p class="card-category">Kehadiran (Bulan Ini)</p>
-                                        <h4 class="card-title"><?= $summary['total_hadir'] ?: 0; ?> Hari</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <div class="card card-stats card-warning card-round">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-5">
-                                    <div class="icon-big text-center">
-                                        <i class="flaticon-time"></i>
-                                    </div>
-                                </div>
-                                <div class="col-7 col-stats">
-                                    <div class="numbers">
-                                        <p class="card-category">Total Telat (Bulan Ini)</p>
-                                        <h4 class="card-title"><?= $summary['total_telat'] ?: 0; ?>x</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-sm-6 col-md-3">
-                    <div class="card card-stats card-danger card-round">
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-5">
-                                    <div class="icon-big text-center">
-                                        <i class="flaticon-close"></i>
-                                    </div>
-                                </div>
-                                <div class="col-7 col-stats">
-                                    <div class="numbers">
-                                        <p class="card-category">Total Alfa (Bulan Ini)</p>
-                                        <h4 class="card-title"><?= $summary['total_alfa'] ?: 0; ?> Hari</h4>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-12">
+                <div class="col-md-8">
                     <div class="card">
                         <div class="card-header">
-                            <h4 class="card-title">Aktivitas Absensi Terbaru (Bulan Ini)</h4>
+                            Kalender Kehadiran
                         </div>
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-head-bg-primary mt-4">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Nama</th>
-                                            <th>NIP</th>
-                                            <th>Tanggal</th>
-                                            <th>Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php $no = 1;
-                                        foreach ($recent_absensi as $row): ?>
-                                            <tr>
-                                                <td><?= $no++; ?></td>
-                                                <td><?= $row['nama']; ?></td>
-                                                <td><?= $row['nip']; ?></td>
-                                                <td><?= date('d M Y', strtotime($row['tanggal'])); ?></td>
-                                                <td>
-                                                    <?php
-                                                    if ($row['hadir'] == 1) echo '<span class="badge badge-success">Hadir</span>';
-                                                    else if ($row['sakit'] == 1) echo '<span class="badge badge-warning">Sakit</span>';
-                                                    else if ($row['izin'] == 1) echo '<span class="badge badge-info">Izin</span>';
-                                                    else if ($row['alfa'] == 1) echo '<span class="badge badge-danger">Alfa</span>';
-                                                    else if ($row['cuti'] == 1) echo '<span class="badge badge-primary">Cuti</span>';
-                                                    else if ($row['dinas_luar'] == 1) echo '<span class="badge badge-secondary">Dinas Luar</span>';
-                                                    ?>
-                                                </td>
-                                            </tr>
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
+                            <div id="calendar"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-header">
+                            Grafik Kehadiran
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartAbsensi"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div class="card mt-4">
+                <div class="card-header">
+                    Rekap Pegawai Bulan <?= date("F", mktime(0, 0, 0, $bulan, 1)) . " " . $tahun ?>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>NIP</th>
+                                    <th>Nama</th>
+                                    <th>Total Kehadiran</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($rekap as $r): ?>
+                                    <tr>
+                                        <td><?= $r['nip'] ?></td>
+                                        <td><?= $r['nama'] ?></td>
+                                        <td><?= $r['total_hari'] ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
+
+<!-- FullCalendar & Chart.js -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Kalender
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            events: <?= $events ?>,
+            locale: 'id'
+        });
+        calendar.render();
+
+        // Grafik
+        const summary = <?= json_encode($summary) ?>;
+        var ctx = document.getElementById('chartAbsensi').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: Object.keys(summary),
+                datasets: [{
+                    data: Object.values(summary),
+                    backgroundColor: [
+                        '#17a2b8', '#ffc107', '#fd7e14', '#dc3545', '#6c757d', '#007bff'
+                    ]
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    title: {
+                        display: false
+                    }
+                }
+            }
+        });
+    });
+</script>
