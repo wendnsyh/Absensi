@@ -25,10 +25,21 @@
             <!-- Navbar Header -->
             <nav class="navbar navbar-header navbar-expand-lg" data-background-color="dark">
 
-                <h1 class="h3 mb-0 text-gray-800"></h1>
-                <div class="text-right text-gray-500">
-                    <p style="margin-bottom: 0px;" id="currentDateTime"></p>
+                <div class="d-flex align-items-center ml-auto mr-4" style="gap: 15px; white-space: nowrap;">
+                    <!-- Waktu -->
+                    <div class="text-gray-400">
+                        <p id="currentDateTime" style="margin-bottom: 0; font-size: 14px;"></p>
+                    </div>
+                    <div style="width: 1px; height: 25px; background-color: #888;"></div>
+                    <!-- Cuaca Tangsel -->
+                    <div class="text-light d-flex align-items-center" style="gap: 5px;">
+                        <span>🌤</span>
+                        <span><strong>Tangerang selatan</strong></span>
+                        <span><strong><?= $temperature; ?>°C</strong></span>
+                        <span>| 💨 <?= $windspeed; ?> km/jam</span>
+                    </div>
                 </div>
+
                 <script>
                     function updateDateTime() {
                         var currentDate = new Date();
@@ -41,25 +52,20 @@
                             minute: 'numeric',
                             hour12: true
                         });
-
                         document.getElementById('currentDateTime').innerHTML = formattedDateTime;
                     }
-
                     updateDateTime();
                     setInterval(updateDateTime, 1000);
                 </script>
 
+                <!-- Profil dan menu lainnya -->
                 <div class="container-fluid">
                     <ul class="navbar-nav topbar-nav ml-md-auto align-items-center">
-                        <li class="nav-item toggle-nav-search hidden-caret">
-                            <a class="nav-link" data-toggle="collapse" href="#search-nav" role="button" aria-expanded="false" aria-controls="search-nav">
-                                <i class="fa fa-search"></i>
-                            </a>
-                        </li>
                         <li class="nav-item dropdown hidden-caret">
                             <a class="dropdown-toggle profile-pic" data-toggle="dropdown" href="#" aria-expanded="false">
                                 <div class="avatar-sm">
-                                    <img src="<?= base_url('assets/img/profile/') . $user['image']; ?>" alt="image profile" class="avatar-img rounded-circle">
+                                    <img src="<?= base_url('assets/img/profile/') . $user['image']; ?>"
+                                        alt="image profile" class="avatar-img rounded-circle">
                                 </div>
                             </a>
                             <ul class="dropdown-menu dropdown-user animated fadeIn">
@@ -67,17 +73,22 @@
                                     <li>
                                         <div class="user-box">
                                             <div class="avatar-lg">
-                                                <img src="<?= base_url('assets/img/profile/') . $user['image']; ?>" alt="image profile" class="avatar-img rounded">
+                                                <img src="<?= base_url('assets/img/profile/') . $user['image']; ?>"
+                                                    alt="image profile" class="avatar-img rounded">
                                             </div>
                                             <div class="u-text">
                                                 <h4><?= $user['name']; ?></h4>
-                                                <p class="text-muted"><?= $user['email']; ?></p><a href="<?= base_url('user') ?>" class="btn btn-xs btn-secondary btn-sm">View Profile</a>
+                                                <p class="text-muted"><?= $user['email']; ?></p>
+                                                <a href="<?= base_url('user') ?>" class="btn btn-xs btn-secondary btn-sm">
+                                                    View Profile
+                                                </a>
                                             </div>
                                         </div>
                                     </li>
                                     <li>
                                         <div class="dropdown-divider"></div>
-                                        <a class="dropdown-item" href="<?= base_url('auth/logout') ?>" onclick="return confirm('Yakin logout?')">Logout</a>
+                                        <a class="dropdown-item" href="<?= base_url('auth/logout') ?>"
+                                            onclick="return confirm('Yakin logout?')">Logout</a>
                                     </li>
                                 </div>
                             </ul>

@@ -96,11 +96,29 @@ class Dashboard extends CI_Controller
         }
         $data['summary'] = $summary;
 
-        // Rekap per pegawai
+        // URL API
+        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
+
+        // Ambil data dari API
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+
+        $data_api = json_decode($response, true);
+
+        // Ambil data cuaca
+        $cuaca = $data_api['current_weather'];
+
+       
+        $data['temperature'] = $cuaca['temperature'];
+        $data['windspeed']   = $cuaca['windspeed'];
+        $data['time']        = $cuaca['time'];
         $data['rekap'] = $this->AbsensiHarian_model->get_rekap_bulanan($bulan, $tahun);
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['title'] = "Dashboard";
-        // Load view Atlantis
+
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('template/topbar', $data);
