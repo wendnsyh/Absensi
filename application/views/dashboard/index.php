@@ -5,55 +5,66 @@
             <div class="page-header">
                 <h4 class="page-title"><?= $title ?></h4>
             </div>
-            <!-- Filter Bulan & Tahun -->
-            <form method="get" class="mb-4">
-                <div class="row">
-                    <div class="col-md-3">
-                        <select name="bulan" class="form-control">
-                            <?php for ($i = 1; $i <= 12; $i++): ?>
-                                <option value="<?= sprintf('%02d', $i) ?>" <?= ($bulan == sprintf('%02d', $i)) ? 'selected' : '' ?>>
-                                    <?= date("F", mktime(0, 0, 0, $i, 1)) ?>
-                                </option>
-                            <?php endfor; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
-                        <select name="tahun" class="form-control">
-                            <?php for ($y = date('Y') - 2; $y <= date('Y') + 1; $y++): ?>
-                                <option value="<?= $y ?>" <?= ($tahun == $y) ? 'selected' : '' ?>><?= $y ?></option>
-                            <?php endfor; ?>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-filter"></i> Tampilkan
-                        </button>
-                    </div>
-                </div>
-            </form>
+            <form action="<?= base_url('dashboard'); ?>" method="get" class="form-inline mb-3">
+                <select name="bulan" class="form-control mr-2">
+                    <?php
+                    $bulan_arr = [
+                        1 => 'January',
+                        2 => 'February',
+                        3 => 'March',
+                        4 => 'April',
+                        5 => 'May',
+                        6 => 'June',
+                        7 => 'July',
+                        8 => 'August',
+                        9 => 'September',
+                        10 => 'October',
+                        11 => 'November',
+                        12 => 'December'
+                    ];
+                    foreach ($bulan_arr as $num => $nama_bulan): ?>
+                        <option value="<?= $num ?>" <?= $bulan == $num ? 'selected' : '' ?>><?= $nama_bulan ?></option>
+                    <?php endforeach; ?>
+                </select>
 
+                <select name="tahun" class="form-control mr-2">
+                    <?php for ($i = date('Y') - 5; $i <= date('Y') + 5; $i++): ?>
+                        <option value="<?= $i ?>" <?= $tahun == $i ? 'selected' : '' ?>><?= $i ?></option>
+                    <?php endfor; ?>
+                </select>
+
+                <button type="submit" class="btn btn-primary">Tampilkan</button>
+            </form>
+            <!-- Statistik Kehadiran -->
             <div class="row">
                 <?php
-                $colors = [
-                    'Tepat Waktu' => 'info',
-                    'Telat < 30 Menit' => 'warning',
-                    'Telat 30–90 Menit' => 'danger',
-                    'Telat > 90 Menit' => 'dark',
-                    'Tidak Finger' => 'secondary',
-                    'Libur' => 'primary',
+                $cards = [
+                    ['label' => 'Tepat Waktu', 'icon' => 'far fa-calendar-check', 'color' => 'primary'],
+                    ['label' => 'Telat < 30 Menit', 'icon' => 'far fa-clock', 'color' => 'warning'],
+                    ['label' => 'Telat 30–90 Menit', 'icon' => 'fas fa-hourglass-half', 'color' => 'danger'],
+                    ['label' => 'Telat > 90 Menit', 'icon' => 'fas fa-hourglass-end', 'color' => 'dark'],
+                    ['label' => 'Tidak Finger', 'icon' => 'fas fa-user-slash', 'color' => 'secondary'],
+                    ['label' => 'Libur', 'icon' => 'fas fa-bed', 'color' => 'info']
                 ];
-                foreach ($summary as $label => $value): ?>
-                    <div class="col-sm-6 col-lg-4">
-                        <div class="card card-stats card-round <?= $colors[$label] ?>">
-                            <div class="card-body ">
+                foreach ($cards as $card):
+                    $label = $card['label'];
+                    $icon = $card['icon'];
+                    $color = $card['color'];
+                    $count = isset($statistik[$label]) ? $statistik[$label] : 0;
+                ?>
+                    <div class="col-md-4 col-lg-4">
+                        <div class="card card-stats card-round">
+                            <div class="card-body">
                                 <div class="row align-items-center">
-                                    <div class="col">
-                                        <h6 class="text-light"><?= $label ?></h6>
-                                        <h3 class="text-light"><?= $value ?></h3>
+                                    <div class="col-icon">
+                                        <div class="icon-big text-center bubble-shadow-small bg-<?= $color ?>">
+                                            <i class="<?= $icon ?> text-white"></i>
+                                        </div>
                                     </div>
-                                    <div class="col-auto">
-                                        <div class="icon icon-shape bg-light text-<?= $colors[$label] ?> rounded-circle shadow">
-                                            <i class="fa fa-calendar-alt"></i>
+                                    <div class="col col-stats ml-3 ml-sm-0">
+                                        <div class="numbers">
+                                            <p class="card-category"><?= $label ?></p>
+                                            <h4 class="card-title"><?= $count ?></h4>
                                         </div>
                                     </div>
                                 </div>
@@ -63,101 +74,84 @@
                 <?php endforeach; ?>
             </div>
 
-            <div class="row">
-                <div class="col-md-8">
+            <!-- Grafik Kehadiran Bulanan -->
+            <div class="row mt-3">
+                <div class="col-md-12">
                     <div class="card">
                         <div class="card-header">
-                            Kalender Kehadiran
+                            <h4 class="card-title">Statistik Kehadiran Bulan <?= date("F", mktime(0, 0, 0, $bulan, 1)) ?> <?= $tahun ?></h4>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="chartKehadiran" height="120"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kalender Kehadiran -->
+            <div class="row mt-3">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Kalender Kehadiran Pegawai</h4>
                         </div>
                         <div class="card-body">
                             <div id="calendar"></div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card">
-                        <div class="card-header">
-                            Grafik Kehadiran
-                        </div>
-                        <div class="card-body">
-                            <canvas id="chartAbsensi"></canvas>
-                        </div>
-                    </div>
-                </div>
             </div>
-
-            <div class="card mt-4">
-                <div class="card-header">
-                    Rekap Pegawai Bulan <?= date("F", mktime(0, 0, 0, $bulan, 1)) . " " . $tahun ?>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>NIP</th>
-                                    <th>Nama</th>
-                                    <th>Total Kehadiran</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($rekap as $r): ?>
-                                    <tr>
-                                        <td><?= $r['nip'] ?></td>
-                                        <td><?= $r['nama'] ?></td>
-                                        <td><?= $r['total_hari'] ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
         </div>
-    </div>
-</div>
 
-<!-- FullCalendar & Chart.js -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- Chart.js -->
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Kalender
-        var calendarEl = document.getElementById('calendar');
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            events: <?= $events ?>,
-            locale: 'id'
-        });
-        calendar.render();
+        <!-- FullCalendar -->
+        <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
 
-        // Grafik
-        const summary = <?= json_encode($summary) ?>;
-        var ctx = document.getElementById('chartAbsensi').getContext('2d');
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: Object.keys(summary),
-                datasets: [{
-                    data: Object.values(summary),
-                    backgroundColor: [
-                        '#17a2b8', '#ffc107', '#fd7e14', '#dc3545', '#6c757d', '#007bff'
-                    ]
-                }]
-            },
-            options: {
-                plugins: {
-                    legend: {
-                        position: 'bottom'
+        <script>
+            // ===== Grafik Statistik =====
+            const ctx = document.getElementById('chartKehadiran').getContext('2d');
+            const chartKehadiran = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: <?= json_encode(array_keys($statistik)) ?>,
+                    datasets: [{
+                        label: 'Jumlah Hari',
+                        data: <?= json_encode(array_values($statistik)) ?>,
+                        backgroundColor: [
+                            '#007bff', '#ffc107', '#dc3545', '#6c757d', '#adb5bd', '#17a2b8'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
                     },
-                    title: {
-                        display: false
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: true
+                        }
                     }
                 }
-            }
-        });
-    });
-</script>
+            });
+
+            // ===== Kalender Kehadiran =====
+            document.addEventListener('DOMContentLoaded', function() {
+                var calendarEl = document.getElementById('calendar');
+                var calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'dayGridMonth',
+                    events: <?= json_encode($kalender) ?>,
+                    height: 600,
+                    themeSystem: 'bootstrap'
+                });
+                calendar.render();
+            });
+        </script>

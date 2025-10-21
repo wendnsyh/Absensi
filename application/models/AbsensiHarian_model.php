@@ -147,16 +147,35 @@ class AbsensiHarian_model extends CI_Model
         ];
     }
 
-    public function get_statistik_bulanan($bulan, $tahun)
+    public function get_statistik($bulan, $tahun)
     {
-        $this->db->select('
-        SUM(CASE WHEN jam_in IS NOT NULL AND jam_out IS NOT NULL THEN 1 ELSE 0 END) AS total_hadir,
-        SUM(CASE WHEN jam_in = jam_out OR jam_in IS NULL OR jam_out IS NULL THEN 1 ELSE 0 END) AS total_tidak_finger,
-        COUNT(*) AS total_data
-    ');
         $this->db->where('MONTH(tanggal)', $bulan);
         $this->db->where('YEAR(tanggal)', $tahun);
-        return $this->db->get($this->table)->row_array();
+        $data = $this->db->get('absensi_harian')->result_array();
+
+        $kategori = [
+            'Tepat Waktu' => 0,
+            'Telat < 30 Menit' => 0,
+            'Telat 30–90 Menit' => 0,
+            'Telat > 90 Menit' => 0,
+            'Tidak Finger' => 0,
+            'Libur' => 0
+        ];
+
+        foreach ($data as $d) {
+            if (isset($kategori[$d['kategori_telat']])) {
+                $kategori[$d['kategori_telat']]++;
+            }
+        }
+
+        return $kategori;
+    }
+
+    public function get_by_bulan_tahun($bulan, $tahun)
+    {
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        return $this->db->get('absensi_harian')->result_array();
     }
 
     public function get_all_by_bulan_tahun($bulan, $tahun)

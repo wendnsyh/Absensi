@@ -76,6 +76,15 @@ class Absensi extends CI_Controller
         $data['bulan_terpilih'] = $bulan_param;
         $data['tahun_terpilih'] = $tahun_param;
 
+        // Ambil data cuaca
+        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
+        $response = file_get_contents($url);
+        $cuaca = json_decode($response, true)['current_weather'] ?? [];
+
+        $data['temperature'] = $cuaca['temperature'] ?? '-';
+        $data['windspeed'] = $cuaca['windspeed'] ?? '-';
+        $data['time'] = $cuaca['time'] ?? '-';
+
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);
         $this->load->view('template/sidebar', $data);
