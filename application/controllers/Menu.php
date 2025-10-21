@@ -22,6 +22,15 @@ class Menu extends CI_Controller
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['title'] = "Menu Management";
 
+        // === API Cuaca Terkini ===
+        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
+        $response = @file_get_contents($url);
+        $cuaca = $response ? json_decode($response, true)['current_weather'] ?? [] : [];
+
+        $data['temperature'] = $cuaca['temperature'] ?? '-';
+        $data['windspeed'] = $cuaca['windspeed'] ?? '-';
+        $data['time'] = $cuaca['time'] ?? '-';
+
         $data['menu'] = $this->db->get('user_menu')->result_array();
 
         $this->form_validation->set_rules('menu', 'Menu', 'required');
@@ -49,6 +58,15 @@ class Menu extends CI_Controller
 
         $data['subMenu'] = $this->menu->getSubMenu();
         $data['menu'] = $this->db->get('user_menu')->result_array();
+
+        // === API Cuaca Terkini ===
+        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
+        $response = @file_get_contents($url);
+        $cuaca = $response ? json_decode($response, true)['current_weather'] ?? [] : [];
+
+        $data['temperature'] = $cuaca['temperature'] ?? '-';
+        $data['windspeed'] = $cuaca['windspeed'] ?? '-';
+        $data['time'] = $cuaca['time'] ?? '-';
 
         $this->form_validation->set_rules('title', 'Title', 'required');
         $this->form_validation->set_rules('menu_id', 'Menu', 'required');
@@ -121,6 +139,14 @@ class Menu extends CI_Controller
             redirect('menu');
         }
 
+        // === API Cuaca Terkini ===
+        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
+        $response = @file_get_contents($url);
+        $cuaca = $response ? json_decode($response, true)['current_weather'] ?? [] : [];
+
+        $data['temperature'] = $cuaca['temperature'] ?? '-';
+        $data['windspeed'] = $cuaca['windspeed'] ?? '-';
+        $data['time'] = $cuaca['time'] ?? '-';
         $data['title'] = 'Edit Menu';
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['menu'] = $this->db->get_where('user_menu', ['id' => $id])->row_array();

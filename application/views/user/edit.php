@@ -34,10 +34,11 @@
                         <label for="name" class="col-sm-2 col-form-label">Nama</label>
                         <div class="col-sm-10">
                             <input type="text"
-                                class="form-control <?= form_error('name') ? 'is-invalid' : '' ?>"
+                                class="form-control text-primary font-weight-bold <?= form_error('name') ? 'is-invalid' : '' ?>"
                                 id="name"
                                 name="name"
-                                value="<?= set_value('name', $user['name']); ?>">
+                                value="<?= set_value('name', $user['name']); ?>"
+                                readonly>
                             <?= form_error('name', '<small class="text-danger">', '</small>'); ?>
                         </div>
                     </div>

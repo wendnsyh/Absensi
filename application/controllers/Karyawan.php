@@ -16,6 +16,15 @@ class Karyawan extends CI_Controller
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
         $data['karyawan'] = $this->karyawan->getAll();
 
+        // === API Cuaca Terkini ===
+        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
+        $response = @file_get_contents($url);
+        $cuaca = $response ? json_decode($response, true)['current_weather'] ?? [] : [];
+
+        $data['temperature'] = $cuaca['temperature'] ?? '-';
+        $data['windspeed'] = $cuaca['windspeed'] ?? '-';
+        $data['time'] = $cuaca['time'] ?? '-';
+
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('template/topbar', $data);

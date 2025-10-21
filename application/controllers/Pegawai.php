@@ -64,6 +64,15 @@ class Pegawai extends CI_Controller
         $data['pagination'] = $this->pagination->create_links();
         $data['keyword'] = $keyword;
 
+        // === API Cuaca Terkini ===
+        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
+        $response = @file_get_contents($url);
+        $cuaca = $response ? json_decode($response, true)['current_weather'] ?? [] : [];
+
+        $data['temperature'] = $cuaca['temperature'] ?? '-';
+        $data['windspeed'] = $cuaca['windspeed'] ?? '-';
+        $data['time'] = $cuaca['time'] ?? '-';
+
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('template/topbar', $data);
