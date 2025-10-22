@@ -31,15 +31,14 @@
                         <p id="currentDateTime" style="margin-bottom: 0; font-size: 14px;"></p>
                     </div>
                     <div style="width: 1px; height: 25px; background-color: #888;"></div>
-                    <!-- Cuaca Tangsel -->
+                    <!-- Cuaca Tangsel  -->
                     <div class="text-light d-flex align-items-center" style="gap: 5px;">
                         <span>🌤</span>
                         <span><strong>Tangerang selatan</strong></span>
                         <span><strong><?= $temperature; ?>°C</strong></span>
-                        <span>| 💨 <?= $windspeed; ?> km/jam</span>
+                        <span>| 💨 <?= $wind_speed; ?> km/jam</span>
                     </div>
-                </div>
-
+                </div> 
                 <script>
                     function updateDateTime() {
                         var currentDate = new Date();

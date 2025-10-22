@@ -184,4 +184,34 @@ class AbsensiHarian_model extends CI_Model
         $this->db->where('YEAR(tanggal)', $tahun);
         return $this->db->get($this->table)->result_array();
     }
+
+    public function get_tren_kehadiran($bulan, $tahun)
+    {
+        $this->db->select('tanggal, COUNT(nip) as total_hadir');
+        $this->db->from('absensi_harian');
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        $this->db->group_by('tanggal');
+        $this->db->order_by('tanggal', 'ASC');
+        return $this->db->get()->result();
+    }
+
+    public function get_rata_jam_masuk_pulang($bulan, $tahun)
+    {
+        $this->db->select('AVG(TIME_TO_SEC(jam_masuk)) as avg_in, AVG(TIME_TO_SEC(jam_pulang)) as avg_out');
+        $this->db->from('absensi_harian');
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        $result = $this->db->get()->row();
+
+        if ($result) {
+            return [
+                'rata_masuk' => gmdate('H:i', $result->avg_in),
+                'rata_pulang' => gmdate('H:i', $result->avg_out),
+            ];
+        }
+        return ['rata_masuk' => '-', 'rata_pulang' => '-'];
+    }
+
+    
 }

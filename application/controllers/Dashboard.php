@@ -88,17 +88,49 @@ class Dashboard extends CI_Controller
             ];
         }
 
-        // === API Cuaca Terkini ===
-        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
-        $response = @file_get_contents($url);
-        $cuaca = $response ? json_decode($response, true)['current_weather'] ?? [] : [];
+        // Ambil data cuaca dari API Open-Meteo
+        $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
+        $longitude = 106.6725;
+        $api_url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=Asia%2FJakarta";
 
-        $data['temperature'] = $cuaca['temperature'] ?? '-';
-        $data['windspeed'] = $cuaca['windspeed'] ?? '-';
-        $data['time'] = $cuaca['time'] ?? '-';
+        $weather_data = json_decode(file_get_contents($api_url), true);
+        if ($weather_data && isset($weather_data['current'])) {
+            $data['temperature'] = $weather_data['current']['temperature_2m'];
+            $data['wind_speed'] = $weather_data['current']['wind_speed_10m'];
+            $data['humidity'] = $weather_data['current']['relative_humidity_2m'];
+            $data['weather_code'] = $weather_data['current']['weather_code'];
+            $data['update_time'] = date('d M Y H:i', strtotime($weather_data['current']['time']));
+            $data['sunrise'] = date('H:i', strtotime($weather_data['daily']['sunrise'][0]));
+            $data['sunset'] = date('H:i', strtotime($weather_data['daily']['sunset'][0]));
+        } else {
+            $data['temperature'] = '-';
+            $data['wind_speed'] = '-';
+            $data['humidity'] = '-';
+            $data['weather_code'] = '-';
+            $data['sunrise'] = '-';
+            $data['sunset'] = '-';
+            $data['last_update'] = '-';
+        }
+        $weather_codes = [
+            0 => 'Cerah',
+            1 => 'Cerah Berawan',
+            2 => 'Berawan',
+            3 => 'Mendung',
+            45 => 'Kabut',
+            48 => 'Kabut Beku',
+            51 => 'Gerimis Ringan',
+            61 => 'Hujan Ringan',
+            63 => 'Hujan Sedang',
+            65 => 'Hujan Lebat',
+            80 => 'Hujan Lokal',
+            95 => 'Badai Petir'
+        ];
+        $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
+
 
         $data['statistik'] = $statistik;
         $data['kalender'] = $kalender;
+
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
 
         $this->load->view('template/header', $data);
@@ -106,5 +138,23 @@ class Dashboard extends CI_Controller
         $this->load->view('template/topbar', $data);
         $this->load->view('dashboard/index', $data);
         $this->load->view('template/footer', $data);
+    }
+
+    public function get_kehadiran_bulanan()
+    {
+        $bulan = $this->input->get('bulan');
+        $tahun = $this->input->get('tahun');
+
+        $data = $this->AbsensiHarian_model->get_tren_kehadiran($bulan, $tahun);
+        echo json_encode($data);
+    }
+
+    public function get_rata_jam()
+    {
+        $bulan = $this->input->get('bulan');
+        $tahun = $this->input->get('tahun');
+
+        $data = $this->AbsensiHarian_model->get_rata_jam_masuk_pulang($bulan, $tahun);
+        echo json_encode($data);
     }
 }
