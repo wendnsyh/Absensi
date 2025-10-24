@@ -76,7 +76,7 @@ class Absensi extends CI_Controller
         $data['bulan_terpilih'] = $bulan_param;
         $data['tahun_terpilih'] = $tahun_param;
 
-       $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
+        $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
         $longitude = 106.6725;
         $api_url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=Asia%2FJakarta";
 
@@ -406,11 +406,12 @@ class Absensi extends CI_Controller
         // reuse the previously fetched rekap data to avoid duplicate queries
         $data['rekap'] = $all_rekap;
 
-$latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
+      // 🌤️ Data Cuaca
+        $latitude = -6.3452;
         $longitude = 106.6725;
         $api_url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=Asia%2FJakarta";
-
         $weather_data = json_decode(file_get_contents($api_url), true);
+
         if ($weather_data && isset($weather_data['current'])) {
             $data['temperature'] = $weather_data['current']['temperature_2m'];
             $data['wind_speed'] = $weather_data['current']['wind_speed_10m'];
@@ -426,8 +427,8 @@ $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
             $data['weather_code'] = '-';
             $data['sunrise'] = '-';
             $data['sunset'] = '-';
-            $data['last_update'] = '-';
         }
+
         $weather_codes = [
             0 => 'Cerah',
             1 => 'Cerah Berawan',
@@ -450,81 +451,106 @@ $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
         $this->load->view('absensi/harian/index', $data);
         $this->load->view('template/footer', $data);
     }
+public function import_harian()
+{
+    $file = $_FILES['file']['tmp_name'];
+    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
+    $sheet = $spreadsheet->getActiveSheet();
+    $rows = $sheet->toArray();
 
-    public function import_harian()
-    {
-        $file = $_FILES['file']['tmp_name'];
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
-        $sheet = $spreadsheet->getActiveSheet();
-        $rows = $sheet->toArray();
+    $bulan = $this->input->post('bulan_impor');
+    $tahun = $this->input->post('tahun_impor');
 
-        $bulan = $this->input->post('bulan_impor');
-        $tahun = $this->input->post('tahun_impor');
+    $data_absensi_harian = [];
 
-        $data_absensi_harian = [];
+    // Baris ke-7: tanggal
+    $tanggal_row = $rows[6];
+    // Baris ke-8: hari
+    $hari_row = $rows[7];
 
-        // Baris ke-7: tanggal
-        $tanggal_row = $rows[6];
-        // Baris ke-8: hari
-        $hari_row = $rows[7];
+    // Data pegawai dimulai dari baris ke-9
+    for ($i = 8; $i < count($rows); $i += 3) {
+        $gabung_row = $rows[$i];
+        $in_row = isset($rows[$i + 1]) ? $rows[$i + 1] : [];
+        $out_row = isset($rows[$i + 2]) ? $rows[$i + 2] : [];
 
-        // Data pegawai dimulai dari baris ke-9
-        for ($i = 8; $i < count($rows); $i += 3) {
-            $gabung_row = $rows[$i];
-            $in_row = isset($rows[$i + 1]) ? $rows[$i + 1] : [];
-            $out_row = isset($rows[$i + 2]) ? $rows[$i + 2] : [];
+        $nama = trim($gabung_row[1]);
+        $nip = trim($gabung_row[2]);
 
-            $nama = trim($gabung_row[1]);
-            $nip = trim($gabung_row[2]);
+        if (empty($nip)) continue;
 
-            if (empty($nip)) continue;
+        for ($col = 4; $col < count($tanggal_row); $col++) {
+            $tanggal = trim($tanggal_row[$col]);
+            $hari = ucfirst(trim($hari_row[$col]));
 
-            for ($col = 4; $col < count($tanggal_row); $col++) {
-                $tanggal = trim($tanggal_row[$col]);
-                $hari = ucfirst(trim($hari_row[$col]));
+            if (empty($tanggal)) continue;
 
-                if (empty($tanggal)) continue;
+            $jam_in = '';
+            $jam_out = '';
+            $keterangan = null;
 
-                $jam_in = '';
-                $jam_out = '';
+            // Gabungan contoh: "07:12 16:24" atau "S"
+            if (!empty($gabung_row[$col])) {
+                $cell_value = trim($gabung_row[$col]);
 
-                // Gabungan "07:12 16:24"
-                if (!empty($gabung_row[$col])) {
-                    $times = preg_split('/\s+/', trim($gabung_row[$col]));
+                // Jika hanya huruf (S, I, C, DL, WFH, A)
+                if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $cell_value)) {
+                    $keterangan = strtoupper($cell_value);
+                } else {
+                    $times = preg_split('/\s+/', $cell_value);
                     if (count($times) === 2) {
                         $jam_in = $times[0];
                         $jam_out = $times[1];
                     }
                 }
-
-                if (empty($jam_in) && !empty($in_row[$col])) $jam_in = trim($in_row[$col]);
-                if (empty($jam_out) && !empty($out_row[$col])) $jam_out = trim($out_row[$col]);
-
-                // Format tanggal
-                $tgl_fix = date('Y-m-d', strtotime("$tahun-$bulan-$tanggal"));
-
-                $data_absensi_harian[] = [
-                    'nip' => $nip,
-                    'nama' => $nama,
-                    'tanggal' => $tgl_fix,
-                    'hari' => $hari,
-                    'jam_in' => $jam_in ?: null,
-                    'jam_out' => $jam_out ?: null
-                ];
             }
-        }
 
-        if (!empty($data_absensi_harian)) {
-            $this->AbsensiHarian_model->insert_batch($data_absensi_harian);
-            $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi berhasil diimpor!</div>');
-        } else {
-            $this->session->set_flashdata('message', '<div class="alert alert-warning">Tidak ada data valid ditemukan di file.</div>');
-        }
+            // Jika tidak ada gabungan, ambil dari baris in/out
+            if (empty($jam_in) && !empty($in_row[$col])) {
+                $val = trim($in_row[$col]);
+                if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $val)) {
+                    $keterangan = strtoupper($val);
+                } else {
+                    $jam_in = $val;
+                }
+            }
 
-        redirect('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun);
+            if (empty($jam_out) && !empty($out_row[$col])) {
+                $val = trim($out_row[$col]);
+                if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $val)) {
+                    $keterangan = strtoupper($val);
+                } else {
+                    $jam_out = $val;
+                }
+            }
+
+            // Format tanggal
+            $tgl_fix = date('Y-m-d', strtotime("$tahun-$bulan-$tanggal"));
+
+            $data_absensi_harian[] = [
+                'nip' => $nip,
+                'nama' => $nama,
+                'tanggal' => $tgl_fix,
+                'hari' => $hari,
+                'jam_in' => $jam_in ?: null,
+                'jam_out' => $jam_out ?: null,
+                'keterangan' => $keterangan
+            ];
+        }
     }
 
-    public function detail_harian($nip, $bulan, $tahun)
+    if (!empty($data_absensi_harian)) {
+        $this->AbsensiHarian_model->insert_batch($data_absensi_harian);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi berhasil diimpor!</div>');
+    } else {
+        $this->session->set_flashdata('message', '<div class="alert alert-warning">Tidak ada data valid ditemukan di file.</div>');
+    }
+
+    redirect('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun);
+}
+
+
+    public function detail_harian($nip, $bulan = null, $tahun = null)
     {
         $bulan = $bulan ?? date('m');
         $tahun = $tahun ?? date('Y');
@@ -544,45 +570,96 @@ $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
                 'Telat 30–90 Menit' => 0,
                 'Telat > 90 Menit' => 0,
                 'Tidak Finger' => 0,
+                'Sakit' => 0,
+                'Izin' => 0,
+                'Cuti' => 0,
+                'Dinas Luar' => 0,
+                'WFH' => 0,
+                'Tanpa Keterangan' => 0,
                 'Libur' => 0
             ]
         ];
 
         foreach ($data_absen as $row) {
             $tanggal = $row['tanggal'];
-            $hari_db = $row['hari']; // dari database (hasil impor)
             $hari_num = date('N', strtotime($tanggal));
+            $hari = $row['hari'] ?: date('l', strtotime($tanggal));
 
-            // Jika kosong, fallback ke nama hari otomatis
-            if (empty($hari_db)) {
-                $hari = date('l', strtotime($tanggal));
-            } else {
-                $hari = $hari_db;
-            }
+            $jam_in = trim($row['jam_in']);
+            $jam_out = trim($row['jam_out']);
+            $ket_db = isset($row['keterangan']) ? trim($row['keterangan']) : '';
 
+            $keterangan = null;
+            $kategori = null;
+            $menit_telat = 0;
+            $status_pulang = '-';
+
+            // 🟩 1. Deteksi Sabtu / Minggu sebagai Libur
             if ($hari_num == 6 || $hari_num == 7) {
-                $absensi[] = [
-                    'tanggal' => $tanggal,
-                    'hari' => $hari,
-                    'jam_in' => '-',
-                    'jam_out' => '-',
-                    'kategori_telat' => 'Libur',
-                    'menit_telat' => 0,
-                    'status_pulang' => 'Libur'
-                ];
+                $keterangan = 'Libur';
+                $kategori = 'Libur';
                 $summary['kategori']['Libur']++;
-                continue;
             }
 
-            if ($row['jam_in'] == $row['jam_out']) {
+            // 🟦 2. Deteksi Keterangan (Sakit, Izin, Cuti, Alpa, Dinas Luar, DL, WFH)
+            elseif (
+                preg_match('/\b(S|SAKIT)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
+            ) {
+                $keterangan = 'Sakit';
+                $kategori = 'Sakit';
+                $summary['kategori']['Sakit']++;
+            } elseif (
+                preg_match('/\b(I|IZIN)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
+            ) {
+                $keterangan = 'Izin';
+                $kategori = 'Izin';
+                $summary['kategori']['Izin']++;
+            } elseif (
+                preg_match('/\b(C|CUTI)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
+            ) {
+                $keterangan = 'Cuti';
+                $kategori = 'Cuti';
+                $summary['kategori']['Cuti']++;
+            } elseif (
+                preg_match('/\b(A|ALPA)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
+            ) {
+                $keterangan = 'Tanpa Keterangan';
+                $kategori = 'Tanpa Keterangan';
+                $summary['kategori']['Tanpa Keterangan']++;
+            } elseif (
+                preg_match('/\b(DL|DINAS LUAR)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
+            ) {
+                $keterangan = 'Dinas Luar';
+                $kategori = 'Dinas Luar';
+                $summary['kategori']['Dinas Luar']++;
+            } elseif (
+                preg_match('/\b(WFH)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
+            ) {
+                $keterangan = 'WFH';
+                $kategori = 'WFH';
+                $summary['kategori']['WFH']++;
+            }
+
+            // 🟨 3. Tidak Finger (jam masuk = jam pulang)
+            elseif ($jam_in == $jam_out && !empty($jam_in)) {
+                $keterangan = 'Tidak Finger';
                 $kategori = 'Tidak Finger';
-                $status_pulang = 'Tidak Finger';
-                $menit_telat = 0;
                 $summary['total_tidak_finger']++;
-            } else {
+                $summary['kategori']['Tidak Finger']++;
+            }
+
+            // 🟧 4. Kosong semua (tidak ada jam masuk & keluar)
+            elseif ((empty($jam_in) || $jam_in == '00:00:00') && (empty($jam_out) || $jam_out == '00:00:00')) {
+                $keterangan = 'Tanpa Keterangan';
+                $kategori = 'Tanpa Keterangan';
+                $summary['kategori']['Tanpa Keterangan']++;
+            }
+
+            // 🟥 5. Jika hadir normal → cek keterlambatan
+            else {
                 $jam_normal = strtotime("07:30");
-                $jam_in = strtotime($row['jam_in']);
-                $selisih = max(0, round(($jam_in - $jam_normal) / 60));
+                $jam_in_time = strtotime($jam_in);
+                $selisih = max(0, round(($jam_in_time - $jam_normal) / 60));
 
                 if ($selisih == 0) {
                     $kategori = 'Tepat Waktu';
@@ -596,24 +673,25 @@ $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
 
                 $status_pulang = 'Normal';
                 $menit_telat = $selisih;
-
+                $keterangan = 'Hadir';
                 $summary['total_menit_telat'] += $menit_telat;
                 $summary['total_hadir']++;
+                $summary['kategori'][$kategori]++;
             }
-
-            $summary['kategori'][$kategori]++;
 
             $absensi[] = [
                 'tanggal' => $tanggal,
                 'hari' => $hari,
-                'jam_in' => $row['jam_in'],
-                'jam_out' => $row['jam_out'],
+                'jam_in' => $jam_in ?: '-',
+                'jam_out' => $jam_out ?: '-',
+                'keterangan' => $keterangan,
                 'kategori_telat' => $kategori,
                 'menit_telat' => $menit_telat,
                 'status_pulang' => $status_pulang
             ];
         }
 
+        // 🔢 Konversi total menit ke hari/jam/menit
         $total = $summary['total_menit_telat'];
         $summary['konversi_telat'] = [
             'hari' => floor($total / (8 * 60)),
@@ -635,11 +713,12 @@ $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
             'user' => $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array()
         ];
 
-       $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
+        // 🌤️ Data Cuaca
+        $latitude = -6.3452;
         $longitude = 106.6725;
         $api_url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=Asia%2FJakarta";
-
         $weather_data = json_decode(file_get_contents($api_url), true);
+
         if ($weather_data && isset($weather_data['current'])) {
             $data['temperature'] = $weather_data['current']['temperature_2m'];
             $data['wind_speed'] = $weather_data['current']['wind_speed_10m'];
@@ -655,8 +734,8 @@ $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
             $data['weather_code'] = '-';
             $data['sunrise'] = '-';
             $data['sunset'] = '-';
-            $data['last_update'] = '-';
         }
+
         $weather_codes = [
             0 => 'Cerah',
             1 => 'Cerah Berawan',
