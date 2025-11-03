@@ -268,4 +268,12 @@ class AbsensiHarian_model extends CI_Model
         }
         return ['rata_masuk' => '-', 'rata_pulang' => '-'];
     }
+
+      public function get_unique_pegawai()
+    {
+        $this->db->select('nip, nama');
+        $this->db->group_by('nip');
+        $this->db->order_by('nama', 'ASC');
+        return $this->db->get('absensi_harian')->result_array();
+    }
 }
