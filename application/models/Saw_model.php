@@ -3,72 +3,108 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Saw_model extends CI_Model
 {
-    private $bobot_table = 'bobot_kriteria';
-    private $nilai_table = 'penilaian_karyawan';
 
-    // ===== Ambil bobot kriteria =====
     public function get_bobot()
     {
-        $query = $this->db->get($this->bobot_table);
-        if ($query->num_rows() > 0) {
-            return $query->row_array();
-        }
-        return ['hari_kerja' => 0.5, 'skills' => 0.3, 'attitude' => 0.2];
+        return $this->db->get('bobot_kriteria')->row_array();
+    }
+
+    public function get_penilaian()
+    {
+        return $this->db->get('penilaian_karyawan')->result_array();
     }
 
     public function update_bobot($data)
     {
-        $this->db->truncate($this->bobot_table);
-        $this->db->insert($this->bobot_table, $data);
+        $this->db->update('bobot_kriteria', $data);
     }
 
-    // ===== Penilaian per pegawai =====
-    public function get_penilaian_by_nip($nip)
+
+    public function get_unique_pegawai_from_absensi()
     {
-        return $this->db->get_where($this->nilai_table, ['nip' => $nip])->row_array();
+        $this->db->select('nip, nama');
+        $this->db->from('absensi_harian');
+        $this->db->group_by('nip');
+        return $this->db->get()->result_array();
     }
 
-    public function simpan_penilaian($data)
+    public function get_total_hadir_by_nip($nip)
     {
-        $cek = $this->db->get_where($this->nilai_table, ['nip' => $data['nip']])->num_rows();
-        if ($cek > 0) {
-            $this->db->where('nip', $data['nip']);
-            $this->db->update($this->nilai_table, $data);
+        $this->db->where('nip', $nip);
+        $this->db->where('keterangan', 'Hadir');
+        return $this->db->count_all_results('absensi_harian');
+    }
+
+
+    public function simpan_penilaian($nip, $hari_kerja, $skills, $attitude)
+    {
+        // Cek apakah sudah ada penilaian sebelumnya
+        $cek = $this->db->get_where('penilaian_karyawan', ['nip' => $nip])->row_array();
+
+        if ($cek) {
+            // update data jika sudah ada
+            $this->db->where('nip', $nip);
+            $this->db->update('penilaian_karyawan', [
+                'hari_kerja' => $hari_kerja,
+                'skills' => $skills,
+                'attitude' => $attitude
+            ]);
         } else {
-            $this->db->insert($this->nilai_table, $data);
+            // insert baru
+            $this->db->insert('penilaian_karyawan', [
+                'nip' => $nip,
+                'hari_kerja' => $hari_kerja,
+                'skills' => $skills,
+                'attitude' => $attitude
+            ]);
         }
     }
 
-    // ===== Perhitungan SAW =====
+    public function get_all_penilaian()
+    {
+        $this->db->select('pk.*, ah.nama');
+        $this->db->from('penilaian_karyawan pk');
+        $this->db->join('absensi_harian ah', 'pk.nip = ah.nip', 'left');
+        $this->db->group_by('pk.nip');
+        return $this->db->get()->result_array();
+    }
+
     public function hitung_saw()
     {
+        $penilaian = $this->db->get('penilaian_karyawan')->result_array();
         $bobot = $this->get_bobot();
 
-        // Ambil data dari absensi_harian (total hari kerja)
-        $pegawai = $this->db->query("
-            SELECT nip, nama, COUNT(tanggal) AS hari_kerja
-            FROM absensi_harian
-            WHERE keterangan NOT IN ('Sakit', 'Izin')
-            GROUP BY nip
-        ")->result_array();
-
-        $hasil = [];
-        foreach ($pegawai as $p) {
-            $nilai = $this->get_penilaian_by_nip($p['nip']);
-            $p['skills'] = $nilai ? $nilai['skills'] : 0;
-            $p['attitude'] = $nilai ? $nilai['attitude'] : 0;
-
-            $p['nilai_akhir'] =
-                ($p['hari_kerja'] * $bobot['hari_kerja']) +
-                ($p['skills'] * $bobot['skills']) +
-                ($p['attitude'] * $bobot['attitude']);
-
-            $hasil[] = $p;
+        if (empty($penilaian)) {
+            return [];
         }
 
-        // Urutkan dari tertinggi ke terendah
+        $max_hari = max(array_column($penilaian, 'hari_kerja'));
+        $max_skills = max(array_column($penilaian, 'skills'));
+        $max_attitude = max(array_column($penilaian, 'attitude'));
+
+        $hasil = [];
+        foreach ($penilaian as $p) {
+            $normal_hari = ($max_hari > 0) ? $p['hari_kerja'] / $max_hari : 0;
+            $normal_skills = ($max_skills > 0) ? $p['skills'] / $max_skills : 0;
+            $normal_attitude = ($max_attitude > 0) ? $p['attitude'] / $max_attitude : 0;
+
+            $nilai_akhir = (
+                ($normal_hari * $bobot['hari_kerja']) +
+                ($normal_skills * $bobot['skills']) +
+                ($normal_attitude * $bobot['attitude'])
+            ) * 100;
+
+            $hasil[] = [
+                'nip' => $p['nip'],
+                'nama' => $p['nama'],
+                'hari_kerja' => $p['hari_kerja'],
+                'skills' => $p['skills'],
+                'attitude' => $p['attitude'],
+                'nilai_akhir' => round($nilai_akhir, 3)
+            ];
+        }
+
         usort($hasil, fn($a, $b) => $b['nilai_akhir'] <=> $a['nilai_akhir']);
         return $hasil;
     }
-  
 }
