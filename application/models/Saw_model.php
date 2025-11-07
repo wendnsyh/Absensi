@@ -11,8 +11,30 @@ class Saw_model extends CI_Model
 
     public function get_penilaian()
     {
-        return $this->db->get('penilaian_karyawan')->result_array();
+        // Ambil semua pegawai unik dari absensi_harian
+        $pegawai = $this->get_unique_pegawai_from_absensi();
+        $data = [];
+
+        foreach ($pegawai as $p) {
+            // Hitung total kehadiran (Hadir) dari absensi_harian
+            $total_hadir = $this->get_total_hadir_by_nip($p['nip']);
+
+            // Ambil nilai skills & attitude dari tabel penilaian_karyawan
+            $penilaian = $this->db->get_where('penilaian_karyawan', ['nip' => $p['nip']])->row_array();
+
+            $data[] = [
+                'nip' => $p['nip'],
+                'nama' => $p['nama'],
+                'hari_kerja' => $total_hadir,
+                'skills' => $penilaian['skills'] ?? 0,
+                'attitude' => $penilaian['attitude'] ?? 0
+            ];
+        }
+
+        return $data;
     }
+
+
 
     public function update_bobot($data)
     {
@@ -27,14 +49,6 @@ class Saw_model extends CI_Model
         $this->db->group_by('nip');
         return $this->db->get()->result_array();
     }
-
-    public function get_total_hadir_by_nip($nip)
-    {
-        $this->db->where('nip', $nip);
-        $this->db->where('keterangan', 'Hadir');
-        return $this->db->count_all_results('absensi_harian');
-    }
-
 
     public function simpan_penilaian($nip, $hari_kerja, $skills, $attitude)
     {
@@ -62,12 +76,13 @@ class Saw_model extends CI_Model
 
     public function get_all_penilaian()
     {
-        $this->db->select('pk.*, ah.nama');
-        $this->db->from('penilaian_karyawan pk');
-        $this->db->join('absensi_harian ah', 'pk.nip = ah.nip', 'left');
-        $this->db->group_by('pk.nip');
+        $this->db->select('ah.nip, ah.nama, pk.hari_kerja, pk.skills, pk.attitude');
+        $this->db->from('absensi_harian ah');
+        $this->db->join('penilaian_karyawan pk', 'ah.nip = pk.nip', 'left');
+        $this->db->group_by('ah.nip');
         return $this->db->get()->result_array();
     }
+
 
     public function hitung_saw()
     {
@@ -106,5 +121,16 @@ class Saw_model extends CI_Model
 
         usort($hasil, fn($a, $b) => $b['nilai_akhir'] <=> $a['nilai_akhir']);
         return $hasil;
+    }
+    public function get_total_hadir_by_nip($nip)
+    {
+        $this->db->from('absensi_harian');
+        $this->db->where('nip', $nip);
+        $this->db->where('jam_in IS NOT NULL', null, false);
+        $this->db->where('jam_out IS NOT NULL', null, false);
+        $this->db->where('jam_in !=', '');
+        $this->db->where('jam_out !=', '');
+        $this->db->where_not_in('hari', ['Sab', 'Mgg']); // abaikan Sabtu, Minggu
+        return $this->db->count_all_results();
     }
 }
