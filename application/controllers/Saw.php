@@ -274,4 +274,43 @@ class Saw extends CI_Controller
             redirect('saw/input_penilaian');
         }
     }
+
+    public function simpan_semua_penilaian()
+    {
+        $nips = $this->input->post('nip');
+        $skills = $this->input->post('skills');
+        $attitudes = $this->input->post('attitude');
+
+        if (!$nips) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger">Data penilaian tidak ditemukan!</div>');
+            redirect('saw/input_penilaian');
+        }
+
+        foreach ($nips as $i => $nip) {
+            $skill = $skills[$i];
+            $attitude = $attitudes[$i];
+            $hari_kerja = $this->Saw_model->get_total_hadir_by_nip($nip);
+
+            $exists = $this->db->get_where('penilaian_karyawan', ['nip' => $nip])->num_rows();
+
+            if ($exists > 0) {
+                $this->db->where('nip', $nip);
+                $this->db->update('penilaian_karyawan', [
+                    'hari_kerja' => $hari_kerja,
+                    'skills' => $skill,
+                    'attitude' => $attitude
+                ]);
+            } else {
+                $this->db->insert('penilaian_karyawan', [
+                    'nip' => $nip,
+                    'hari_kerja' => $hari_kerja,
+                    'skills' => $skill,
+                    'attitude' => $attitude
+                ]);
+            }
+        }
+
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Semua penilaian berhasil disimpan!</div>');
+        redirect('saw/input_penilaian');
+    }
 }

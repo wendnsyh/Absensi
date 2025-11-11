@@ -27,7 +27,7 @@
     <!-- CSS Files -->
     <link rel="stylesheet" href="<?= base_url('assets/') ?>/atlantis/css/bootstrap.min.css">
     <link rel="stylesheet" href="<?= base_url('assets/') ?>/atlantis/css/atlantis.min.css">
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     <!-- CSS Just for demo purpose, don't include it in your project -->
     <link rel="stylesheet" href="<?= base_url('assets/') ?>/atlantis/css/demo.css">
 
