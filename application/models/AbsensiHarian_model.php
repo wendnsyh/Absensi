@@ -39,11 +39,14 @@ class AbsensiHarian_model extends CI_Model
         return $this->db->get($this->table)->result_array();
     }
 
-    // 🔹 Ambil data pegawai berdasarkan NIP
     public function get_pegawai_by_nip($nip)
     {
-        $this->db->where('nip', $nip);
-        return $this->db->get('pegawai')->row_array();
+        return $this->db
+            ->select('id_pegawai, nip, nama_pegawai, divisi, jabatan')
+            ->from('pegawai')
+            ->where('nip', $nip)
+            ->get()
+            ->row();  // return OBJECT
     }
 
     // 🔹 Ambil semua data absensi + detail perhitungan
@@ -224,7 +227,7 @@ class AbsensiHarian_model extends CI_Model
         return $kategori;
     }
 
-     public function get_by_bulan_tahun($bulan, $tahun)
+    public function get_by_bulan_tahun($bulan, $tahun)
     {
         $this->db->select('nip, nama, tanggal, hari, jam_in, jam_out, keterangan');
         $this->db->from($this->table);
@@ -269,7 +272,7 @@ class AbsensiHarian_model extends CI_Model
         return ['rata_masuk' => '-', 'rata_pulang' => '-'];
     }
 
-      public function get_unique_pegawai()
+    public function get_unique_pegawai()
     {
         $this->db->select('nip, nama');
         $this->db->group_by('nip');

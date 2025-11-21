@@ -1,199 +1,173 @@
+<!-- Atlantis Template Views for Pegawai Module -->
+
+<!-- index.php -->
 <div class="main-panel">
     <div class="content">
         <div class="page-inner">
             <div class="page-header">
-                <h4 class="page-title"><?= $title ?></h4>
-                <ul class="breadcrumbs">
-                    <li class="nav-home">
-                        <a href="<?= base_url('dashboard') ?>">
-                            <i class="flaticon-home"></i>
-                        </a>
-                    </li>
-                    <li class="separator">
-                        <i class="flaticon-right-arrow"></i>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#">Pegawai</a>
-                    </li>
-                </ul>
+                <h4 class="page-title">Data Pegawai</h4>
             </div>
 
-            <!-- Flash message -->
-            <?= $this->session->flashdata('message'); ?>
-
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <form action="<?= base_url('pegawai/index'); ?>" method="get" class="form-inline">
-                                <input type="text" name="keyword" class="form-control mr-2 mb-2"
-                                    placeholder="Cari Nama / NIP" value="<?= $keyword; ?>">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-search"></i> Cari
-                                </button>
-                                <a href="<?= base_url('pegawai'); ?>" class="btn btn-secondary ml-2">
-                                    <i class="fas fa-sync"></i> Reset
-                                </a>
-                            </form>
-                            <button class="btn btn-primary" data-toggle="modal" data-target="#tambahpegawai">
-                                <i class="fas fa-plus"></i> Tambah pegawai
-                            </button>
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <form class="form-inline" method="get" action="">
+                        <div class="form-group mr-2">
+                            <input type="text" name="keyword" class="form-control" placeholder="Cari nama/NIP" value="<?= $keyword ?>">
                         </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table id="basic-datatables" class="display table table-striped table-hover">
-                                    <thead>
-                                        <tr>
-                                            <th>No</th>
-                                            <th>Nama</th>
-                                            <th>NIP</th>
-                                            <th>Tanggal Masuk</th>
-                                            <th>Divisi</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php $no = 1;
-                                        foreach ($pegawai as $row): ?>
-                                            <tr>
-                                                <td><?= $no++; ?></td>
-                                                <td><?= $row['nama']; ?></td>
-                                                <td><?= $row['nip']; ?></td>
-                                                <td><?= date('d M Y', strtotime($row['tanggal_masuk'])); ?></td>
-                                                <td><?= $row['divisi']; ?></td>
-                                                <td>
-                                                    <!-- Tombol Edit -->
-                                                    <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#editpegawai<?= $row['id_pegawai']; ?>">
-                                                        <i class="fas fa-edit"></i> Edit
-                                                    </button>
-                                                    <!-- Tombol Hapus -->
-                                                    <a href="<?= base_url('pegawai/delete/' . $row['id_pegawai']); ?>"
-                                                        class="btn btn-danger btn-sm"
-                                                        onclick="return confirm('Yakin hapus data ini?');">
-                                                        <i class="fas fa-trash"></i> Hapus
-                                                    </a>
-                                                </td>
-                                            </tr>
-
-                                            <!-- Modal Edit -->
-                                            <div class="modal fade" id="editpegawai<?= $row['id_pegawai']; ?>" tabindex="-1" role="dialog" aria-labelledby="editpegawaiLabel<?= $row['id_pegawai']; ?>" aria-hidden="true">
-                                                <div class="modal-dialog" role="document">
-                                                    <div class="modal-content">
-                                                        <form action="<?= base_url('pegawai/edit/' . $row['id_pegawai']); ?>" method="post">
-                                                            <div class="modal-header">
-                                                                <h5 class="modal-title" id="editpegawaiLabel<?= $row['id_pegawai']; ?>">Edit pegawai</h5>
-                                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                    <span aria-hidden="true">&times;</span>
-                                                                </button>
-                                                            </div>
-                                                            <div class="modal-body">
-
-                                                                <div class="form-group">
-                                                                    <label for="nama">Nama</label>
-                                                                    <input type="text" class="form-control" name="nama" value="<?= $row['nama']; ?>" required>
-                                                                </div>
-
-                                                                <div class="form-group">
-                                                                    <label for="nip">NIP</label>
-                                                                    <input type="number" class="form-control" name="nip" value="<?= $row['nip']; ?>" required>
-                                                                </div>
-
-                                                                <div class="form-group">
-                                                                    <label for="tanggal_masuk">Tanggal Masuk</label>
-                                                                    <input type="date" class="form-control" name="tanggal_masuk" value="<?= $row['tanggal_masuk']; ?>" required>
-                                                                </div>
-
-                                                                <div class="form-group">
-                                                                    <label for="divisi">Divisi</label>
-                                                                    <select name="divisi" class="form-control" required>
-                                                                        <option value="Sekretariat" <?= $row['divisi'] == 'Sekretariat' ? 'selected' : ''; ?>>Sekretariat</option>
-                                                                        <option value="Rehabsos" <?= $row['divisi'] == 'Rehabsos' ? 'selected' : ''; ?>>Rehabsos</option>
-                                                                        <option value="Dayasos" <?= $row['divisi'] == 'Dayasos' ? 'selected' : ''; ?>>Dayasos</option>
-                                                                        <option value="Linjamsos" <?= $row['divisi'] == 'Linjamsos' ? 'selected' : ''; ?>>Linjamsos</option>
-                                                                    </select>
-                                                                </div>
-
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-danger" data-dismiss="modal">
-                                                                    <i class="fas fa-times mr-2"></i>Batal
-                                                                </button>
-                                                                <button type="submit" class="btn btn-primary">
-                                                                    <i class="fas fa-save mr-2"></i>Update
-                                                                </button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <!-- End Modal Edit -->
-
-                                        <?php endforeach; ?>
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="form-group mr-2">
+                            <select name="divisi" class="form-control">
+                                <option value="">Semua Divisi</option>
+                                <?php foreach ($divisi_list as $d): ?>
+                                    <option value="<?= $d->divisi ?>" <?= ($filter_divisi == $d->divisi ? 'selected' : '') ?>>
+                                        <?= $d->divisi ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
+                        <button class="btn btn-primary">Filter</button>
+                    </form>
+
+                    <button class="btn btn-success" data-toggle="modal" data-target="#modalAddPegawai">Tambah Pegawai</button>
+                </div>
+
+                <div class="card-body">
+                    <?= $this->session->flashdata('message') ?>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead>
+                                <tr class="bg-primary text-white">
+                                    <th>No</th>
+                                    <th>NIP</th>
+                                    <th>Nama</th>
+                                    <th>Divisi</th>
+                                    <th>Tanggal Masuk</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php $no = $start + 1; foreach($pegawai as $p): ?>
+                                <tr>
+                                    <td><?= $no++ ?></td>
+                                    <td><?= $p->nip ?></td>
+                                    <td><?= $p->nama_pegawai ?></td>
+                                    <td><?= $p->divisi ?: '-' ?></td>
+                                    <td><?= $p->tanggal_masuk ?></td>
+                                    <td>
+                                        <button class="btn btn-warning btn-sm" data-toggle="modal" data-target="#modalEditPegawai<?= $p->id_pegawai ?>">Edit</button>
+                                        <a href="<?= base_url('pegawai/delete/' . $p->id_pegawai) ?>" onclick="return confirm('Yakin hapus?')" class="btn btn-danger btn-sm">Hapus</a>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3">
+                        <?= $pagination ?>
                     </div>
                 </div>
             </div>
-
-            <!-- Modal Tambah pegawai -->
-            <div class="modal fade" id="tambahpegawai" tabindex="-1" role="dialog" aria-labelledby="tambahpegawaiLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-                        <form action="<?= base_url('pegawai/add'); ?>" method="post">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="tambahpegawaiLabel">Tambah pegawai</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-
-                                <div class="form-group">
-                                    <label for="nama">Nama</label>
-                                    <input type="text" class="form-control" name="nama" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="nip">NIP</label>
-                                    <input type="number" class="form-control" name="nip" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="tanggal_masuk">Tanggal Masuk</label>
-                                    <input type="date" class="form-control" name="tanggal_masuk" required>
-                                </div>
-
-                                <div class="form-group">
-                                    <label for="divisi">Divisi</label>
-                                    <select name="divisi" class="form-control" required>
-                                        <option value="">-- Pilih Divisi --</option>
-                                        <option value="Sekretariat">Sekretariat</option>
-                                        <option value="Rehabsos">Rehabsos</option>
-                                        <option value="Dayasos">Dayasos</option>
-                                        <option value="Linjamsos">Linjamsos</option>
-                                    </select>
-                                </div>
-
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">
-                                    <i class="fas fa-times mr-2"></i>Batal
-                                </button>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save mr-2"></i>Simpan
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <!-- End Modal Tambah -->
-            <div class="card-footer">
-                <?= $pagination; ?>
-            </div>
-
         </div>
     </div>
 </div>
+
+<!-- Modal Tambah Pegawai -->
+<div class="modal fade" id="modalAddPegawai">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Tambah Pegawai</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <form action="<?= base_url('pegawai/add') ?>" method="post">
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <label>NIP</label>
+                        <input type="text" name="nip" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nama Pegawai</label>
+                        <input type="text" name="nama" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Divisi</label>
+                        <select name="divisi" class="form-control">
+                            <option value="">Pilih Divisi</option>
+                            <?php foreach ($divisi_list as $d): ?>
+                                <option value="<?= $d->divisi ?>"><?= $d->divisi ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tanggal Masuk</label>
+                        <input type="date" name="tanggal_masuk" class="form-control" required>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button class="btn btn-success">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Pegawai -->
+<?php foreach ($pegawai as $p): ?>
+<div class="modal fade" id="modalEditPegawai<?= $p->id_pegawai ?>">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title">Edit Pegawai</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+
+            <form action="<?= base_url('pegawai/edit/' . $p->id_pegawai) ?>" method="post">
+                <div class="modal-body">
+
+                    <div class="form-group">
+                        <label>NIP</label>
+                        <input type="text" name="nip" class="form-control" value="<?= $p->nip ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Nama Pegawai</label>
+                        <input type="text" name="nama" class="form-control" value="<?= $p->nama_pegawai ?>" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Divisi</label>
+                        <select name="divisi" class="form-control">
+                            <option value="">Pilih Divisi</option>
+                            <?php foreach ($divisi_list as $d): ?>
+                                <option value="<?= $d->divisi ?>" <?= ($p->divisi == $d->divisi) ? 'selected' : '' ?>>
+                                    <?= $d->divisi ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tanggal Masuk</label>
+                        <input type="date" name="tanggal_masuk" class="form-control" value="<?= $p->tanggal_masuk ?>" required>
+                    </div>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button class="btn btn-warning">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endforeach; ?>

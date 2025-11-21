@@ -2,28 +2,21 @@
 defined('BASEPATH') or exit('No direct script access allowed');
 
 /**
- * @property CI_DB_query_builder $db
- * @property CI_Session $session
- * @property CI_Loader $load
- * @property CI_Input $input
- * @property CI_Pagination $pagination
- * @property pegawai_model $pegawai_model
- * @property CI_URI  $uri
+ * @property Pegawai_model $Pegawai_model
  */
 
 class Pegawai extends CI_Controller
 {
-
     public function __construct()
     {
         parent::__construct();
-        //is_logged_in(); // helper login
         $this->load->model('pegawai_model');
+        $this->load->library('pagination');
     }
 
     public function index()
     {
-        $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
+        $latitude = -6.3452;
         $longitude = 106.6725;
         $api_url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=Asia%2FJakarta";
 
@@ -43,8 +36,8 @@ class Pegawai extends CI_Controller
             $data['weather_code'] = '-';
             $data['sunrise'] = '-';
             $data['sunset'] = '-';
-            $data['last_update'] = '-';
         }
+
         $weather_codes = [
             0 => 'Cerah',
             1 => 'Cerah Berawan',
@@ -61,30 +54,27 @@ class Pegawai extends CI_Controller
         ];
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
 
+        // Pagination
         $this->load->library('pagination');
 
-        $keyword = $this->input->get('keyword'); // ambil keyword dari form GET
+        $keyword = $this->input->get('keyword');
+        $filter_divisi = $this->input->get('divisi');
+
+        $data['keyword'] = $keyword;
+        $data['filter_divisi'] = $filter_divisi;
+
         $config['base_url'] = base_url('pegawai/index');
         $config['per_page'] = 15;
         $config['uri_segment'] = 3;
+        $config['reuse_query_string'] = TRUE;
 
-        // Hitung total baris (dengan filter pencarian)
-        $config['total_rows'] = $this->pegawai_model->countAll($keyword);
+        // Hitung total data
+        $config['total_rows'] = $this->pegawai_model->count_filtered($keyword, $filter_divisi);
 
-        // Style Bootstrap 4
+        // Style Bootstrap
         $config['full_tag_open'] = '<ul class="pagination justify-content-center">';
         $config['full_tag_close'] = '</ul>';
         $config['attributes'] = ['class' => 'page-link'];
-        $config['first_link'] = 'First';
-        $config['last_link'] = 'Last';
-        $config['first_tag_open'] = '<li class="page-item">';
-        $config['first_tag_close'] = '</li>';
-        $config['prev_tag_open'] = '<li class="page-item">';
-        $config['prev_tag_close'] = '</li>';
-        $config['next_tag_open'] = '<li class="page-item">';
-        $config['next_tag_close'] = '</li>';
-        $config['last_tag_open'] = '<li class="page-item">';
-        $config['last_tag_close'] = '</li>';
         $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
         $config['cur_tag_close'] = '</a></li>';
         $config['num_tag_open'] = '<li class="page-item">';
@@ -92,24 +82,21 @@ class Pegawai extends CI_Controller
 
         $this->pagination->initialize($config);
 
+        // ⬅️ INI BAGIAN PENTING
         $start = $this->uri->segment(3, 0);
-        $data['title'] = 'Data pegawai';
-        $data['user'] = $this->db->get_where(
-            'user',
-            ['email' => $this->session->userdata('email')]
-        )->row_array();
-        $data['pegawai'] = $this->pegawai_model->getData($config['per_page'], $start, $keyword);
+        $data['start'] = $start;
+
+        // Ambil data pegawai
+        $data['pegawai'] = $this->pegawai_model->get_filtered($config['per_page'], $start, $keyword, $filter_divisi);
+
+        // Ambil daftar divisi untuk filter & dropdown
+        $data['divisi_list'] = $this->pegawai_model->get_divisi_list();
+
         $data['pagination'] = $this->pagination->create_links();
-        $data['keyword'] = $keyword;
-
-        // === API Cuaca Terkini ===
-        $url = "https://api.open-meteo.com/v1/forecast?latitude=-6.25&longitude=106.75&current_weather=true";
-        $response = @file_get_contents($url);
-        $cuaca = $response ? json_decode($response, true)['current_weather'] ?? [] : [];
-
-        $data['temperature'] = $cuaca['temperature'] ?? '-';
-        $data['windspeed'] = $cuaca['windspeed'] ?? '-';
-        $data['time'] = $cuaca['time'] ?? '-';
+        $data['title'] = 'Data Pegawai';
+        $data['user'] = $this->db->get_where('user', [
+            'email' => $this->session->userdata('email')
+        ])->row_array();
 
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
@@ -118,56 +105,61 @@ class Pegawai extends CI_Controller
         $this->load->view('template/footer');
     }
 
+
     public function add()
     {
         $nip = $this->input->post('nip', true);
 
-        // cek apakah nip sudah ada
-        $cek = $this->db->get_where('pegawai', ['nip' => $nip])->row_array();
-        if ($cek) {
-            $this->session->set_flashdata('message', '<div class="alert alert-danger">NIP sudah terdaftar, gunakan NIP lain!</div>');
+        if ($this->db->get_where('pegawai', ['nip' => $nip])->row_array()) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger">NIP sudah digunakan!</div>');
             redirect('pegawai');
         }
 
         $data = [
-            'nama' => $this->input->post('nama', true),
-            'nip' => $this->input->post('nip', true),
-            'tanggal_masuk' => $this->input->post('tanggal_masuk', true),
-            'divisi' => $this->input->post('divisi', true),
+            'nama_pegawai'   => $this->input->post('nama', true),
+            'nip'            => $this->input->post('nip', true),
+            'divisi'         => $this->input->post('divisi', true),
+            'jabatan'        => $this->input->post('jabatan', true),
+            'status_aktif'   => 'aktif'
         ];
 
-        $this->pegawai_model->insert($data);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">pegawai berhasil ditambahkan!</div>');
+        $this->db->insert('pegawai', $data);
+
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Pegawai berhasil ditambahkan!</div>');
         redirect('pegawai');
     }
+
 
     public function edit($id)
     {
         $nip = $this->input->post('nip', true);
 
-        // cek nip, tapi abaikan nip milik dirinya sendiri
-        $cek = $this->db->get_where('pegawai', ['nip' => $nip, 'id_pegawai !=' => $id])->row_array();
-        if ($cek) {
+        // Pastikan tidak duplikasi NIP
+        $exists = $this->db->get_where('pegawai', ['nip' => $nip, 'id_pegawai !=' => $id])->row_array();
+        if ($exists) {
             $this->session->set_flashdata('message', '<div class="alert alert-danger">NIP sudah digunakan pegawai lain!</div>');
             redirect('pegawai');
         }
 
         $data = [
-            'nama' => $this->input->post('nama', true),
-            'nip' => $this->input->post('nip', true),
-            'tanggal_masuk' => $this->input->post('tanggal_masuk', true),
-            'divisi' => $this->input->post('divisi', true),
+            'nama_pegawai' => $this->input->post('nama', true),
+            'nip'          => $this->input->post('nip', true),
+            'divisi'       => $this->input->post('divisi', true),
+            'jabatan'      => $this->input->post('jabatan', true),
+            'status_aktif' => $this->input->post('status_aktif', true),
         ];
 
-        $this->pegawai_model->update($id, $data);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">pegawai berhasil diperbarui!</div>');
+        $this->db->where('id_pegawai', $id);
+        $this->db->update('pegawai', $data);
+
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Data pegawai berhasil diperbarui!</div>');
         redirect('pegawai');
     }
 
     public function delete($id)
     {
-        $this->pegawai_model->delete($id);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">pegawai berhasil dihapus!</div>');
+        $this->db->delete('pegawai', ['id_pegawai' => $id]);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Pegawai berhasil dihapus!</div>');
         redirect('pegawai');
     }
 }

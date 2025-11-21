@@ -1,49 +1,52 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class pegawai_model extends CI_Model
+class Pegawai_model extends CI_Model
 {
-
-    public function getAll()
+    public function get_by_nip_or_nama($nip, $nama)
     {
-        return $this->db->get('pegawai')->result_array();
+        return $this->db->where('nip', $nip)
+            ->or_where('nama_pegawai', $nama)
+            ->get('pegawai')
+            ->row_array();
     }
 
-    public function getById($id)
+    public function get_by_nip($nip)
+    {
+        return $this->db->get_where('pegawai', ['nip' => $nip])->row_array();
+    }
+
+    public function get_by_id($id)
     {
         return $this->db->get_where('pegawai', ['id_pegawai' => $id])->row_array();
     }
 
     public function insert($data)
     {
-        return $this->db->insert('pegawai', $data);
+        $this->db->insert('pegawai', $data);
     }
 
     public function update($id, $data)
     {
-        $this->db->where('id_pegawai', $id);
-        return $this->db->update('pegawai', $data);
+        $this->db->where('id_pegawai', $id)->update('pegawai', $data);
     }
 
     public function delete($id)
     {
-        return $this->db->delete('pegawai', ['id_pegawai' => $id]);
-    }
-    public function countAll($keyword = null)
-    {
-        if ($keyword) {
-            $this->db->like('nama', $keyword);
-            $this->db->or_like('nip', $keyword);
-        }
-        return $this->db->count_all_results('pegawai');
+        $this->db->delete('pegawai', ['id_pegawai' => $id]);
     }
 
-    public function getData($limit, $start, $keyword = null)
+    public function get_divisi_list()
     {
-        if ($keyword) {
-            $this->db->like('nama', $keyword);
-            $this->db->or_like('nip', $keyword);
-        }
-        return $this->db->get('pegawai', $limit, $start)->result_array();
+        $this->db->select('DISTINCT(divisi) as divisi');
+        $this->db->from('pegawai');
+        $this->db->where('divisi IS NOT NULL');
+        $this->db->where('divisi !=', '');
+        return $this->db->get()->result();
+    }
+
+    public function get_all()
+    {
+        return $this->db->order_by('nama_pegawai', 'ASC')->get('pegawai')->result();
     }
 }

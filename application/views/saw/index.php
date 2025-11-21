@@ -2,50 +2,81 @@
     <div class="content">
         <div class="page-inner">
             <div class="page-header">
-                <h4 class="page-title">Hasil Penilaian SAW</h4>
+                <h4 class="page-title">Hasil Perhitungan SAW</h4>
             </div>
 
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-body">
-                    <?php if (empty($hasil)): ?>
-                        <div class="alert alert-warning text-center">
-                            <strong>Belum ada data penilaian karyawan.</strong>
+                    <?= $this->session->flashdata('message') ?>
+
+                    <form method="get" class="form-inline mb-3">
+                        <div class="form-group mr-2">
+                            <label class="mr-2">Bulan</label>
+                            <select name="bulan" class="form-control">
+                                <?php for ($m = 1; $m <= 12; $m++): $mm = str_pad($m, 2, '0', STR_PAD_LEFT); ?>
+                                    <option value="<?= $mm ?>" <?= ($bulan == $mm ? 'selected' : '') ?>><?= $mm ?></option>
+                                <?php endfor; ?>
+                            </select>
                         </div>
-                    <?php else: ?>
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped">
-                                <thead class="thead-dark text-center">
-                                    <tr>
-                                        <th>Peringkat</th>
-                                        <th>NIP</th>
-                                        <th>Nama</th>
-                                        <th>Hari Kerja</th>
-                                        <th>Skill</th>
-                                        <th>Attitude</th>
-                                        <th>Nilai Akhir</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <?php $rank = 1; ?>
-                                    <?php foreach ($hasil as $h): ?>
+
+                        <div class="form-group mr-2">
+                            <label class="mr-2">Tahun</label>
+                            <input type="number" name="tahun" class="form-control" value="<?= $tahun ?>">
+                        </div>
+
+                        <div class="form-group mr-2">
+                            <label class="mr-2">Divisi</label>
+                            <select name="divisi" class="form-control">
+                                <option value="">Semua</option>
+                                <?php foreach ($list_divisi as $d): ?>
+                                    <option value="<?= $d->divisi ?>" <?= ($divisi == $d->divisi ? 'selected' : '') ?>><?= $d->divisi ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <button class="btn btn-primary">Filter</button>
+                    </form>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>#</th>
+                                    <th>NIP</th>
+                                    <th>Nama</th>
+                                    <th>Divisi</th>
+                                    <th>Hari Kerja</th>
+                                    <th>Skills</th>
+                                    <th>Attitude</th>
+                                    <th>Nilai Akhir (%)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (!empty($hasil)): $no = 1;
+                                    foreach ($hasil as $r): ?>
                                         <tr>
-                                            <td class="text-center"><b><?= $rank++; ?></b></td>
-                                            <td><?= htmlspecialchars($h['nip'] ?? '-'); ?></td>
-                                            <td><?= htmlspecialchars($h['nama'] ?? '-'); ?></td>
-                                            <td class="text-center"><?= $h['hari_kerja'] ?? 0; ?></td>
-                                            <td class="text-center"><?= $h['skills'] ?? 0; ?></td>
-                                            <td class="text-center"><?= $h['attitude'] ?? 0; ?></td>
-                                            <td class="text-center">
-                                                <b><?= isset($h['nilai_akhir']) ? number_format($h['nilai_akhir'], 3) : '-'; ?></b>
-                                            </td>
+                                            <td><?= $no++ ?></td>
+                                            <td><?= $r['nip'] ?></td>
+                                            <td><?= $r['nama'] ?></td>
+                                            <td><?= $r['divisi'] ?: '-' ?></td>
+                                            <td class="text-center"><?= $r['hari_kerja'] ?></td>
+                                            <td class="text-center"><?= $r['skills'] ?></td>
+                                            <td class="text-center"><?= $r['attitude'] ?></td>
+                                            <td class="text-center font-weight-bold"><?= $r['nilai_akhir'] ?></td>
                                         </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php endif; ?>
+                                    <?php endforeach;
+                                else: ?>
+                                    <tr>
+                                        <td colspan="8" class="text-center">Belum ada hasil penilaian.</td>
+                                    </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
                 </div>
             </div>
+
         </div>
     </div>
 </div>

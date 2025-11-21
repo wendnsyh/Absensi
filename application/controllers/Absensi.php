@@ -28,6 +28,7 @@ class Absensi extends CI_Controller
         $this->load->model('Absensi_model');
         $this->load->model('AbsensiHarian_model');
         $this->load->model('Rekap_model');
+        $this->load->model('Pegawai_model');
         $this->load->library('session');
         $this->load->library('pagination');
     }
@@ -406,7 +407,7 @@ class Absensi extends CI_Controller
         // reuse the previously fetched rekap data to avoid duplicate queries
         $data['rekap'] = $all_rekap;
 
-      // 🌤️ Data Cuaca
+        // 🌤️ Data Cuaca
         $latitude = -6.3452;
         $longitude = 106.6725;
         $api_url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=Asia%2FJakarta";
@@ -451,112 +452,166 @@ class Absensi extends CI_Controller
         $this->load->view('absensi/harian/index', $data);
         $this->load->view('template/footer', $data);
     }
-public function import_harian()
-{
-    $file = $_FILES['file']['tmp_name'];
-    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
-    $sheet = $spreadsheet->getActiveSheet();
-    $rows = $sheet->toArray();
+    public function import_harian()
+    {
+        $file = $_FILES['file']['tmp_name'];
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
+        $sheet = $spreadsheet->getActiveSheet();
+        $rows = $sheet->toArray();
 
-    $bulan = $this->input->post('bulan_impor');
-    $tahun = $this->input->post('tahun_impor');
+        $bulan = $this->input->post('bulan_impor');
+        $tahun = $this->input->post('tahun_impor');
 
-    $data_absensi_harian = [];
+        $data_absensi_harian = [];
 
-    // Baris ke-7: tanggal
-    $tanggal_row = $rows[6];
-    // Baris ke-8: hari
-    $hari_row = $rows[7];
+        // Baris ke-7: tanggal
+        $tanggal_row = $rows[6];
+        // Baris ke-8: hari
+        $hari_row = $rows[7];
 
-    // Data pegawai dimulai dari baris ke-9
-    for ($i = 8; $i < count($rows); $i += 3) {
-        $gabung_row = $rows[$i];
-        $in_row = isset($rows[$i + 1]) ? $rows[$i + 1] : [];
-        $out_row = isset($rows[$i + 2]) ? $rows[$i + 2] : [];
+        // Data pegawai dimulai dari baris ke-9
+        for ($i = 8; $i < count($rows); $i += 3) {
+            $gabung_row = $rows[$i];
+            $in_row = isset($rows[$i + 1]) ? $rows[$i + 1] : [];
+            $out_row = isset($rows[$i + 2]) ? $rows[$i + 2] : [];
 
-        $nama = trim($gabung_row[1]);
-        $nip = trim($gabung_row[2]);
+            $nama = trim($gabung_row[1]);
+            $nip = trim($gabung_row[2]);
 
-        if (empty($nip)) continue;
+            if (empty($nip)) continue;
 
-        for ($col = 4; $col < count($tanggal_row); $col++) {
-            $tanggal = trim($tanggal_row[$col]);
-            $hari = ucfirst(trim($hari_row[$col]));
+            for ($col = 4; $col < count($tanggal_row); $col++) {
+                $tanggal = trim($tanggal_row[$col]);
+                $hari = ucfirst(trim($hari_row[$col]));
 
-            if (empty($tanggal)) continue;
+                if (empty($tanggal)) continue;
 
-            $jam_in = '';
-            $jam_out = '';
-            $keterangan = null;
+                $jam_in = '';
+                $jam_out = '';
+                $keterangan = null;
 
-            // Gabungan contoh: "07:12 16:24" atau "S"
-            if (!empty($gabung_row[$col])) {
-                $cell_value = trim($gabung_row[$col]);
+                // Gabungan contoh: "07:12 16:24" atau "S"
+                if (!empty($gabung_row[$col])) {
+                    $cell_value = trim($gabung_row[$col]);
 
-                // Jika hanya huruf (S, I, C, DL, WFH, A)
-                if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $cell_value)) {
-                    $keterangan = strtoupper($cell_value);
-                } else {
-                    $times = preg_split('/\s+/', $cell_value);
-                    if (count($times) === 2) {
-                        $jam_in = $times[0];
-                        $jam_out = $times[1];
+                    // Jika hanya huruf (S, I, C, DL, WFH, A)
+                    if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $cell_value)) {
+                        $keterangan = strtoupper($cell_value);
+                    } else {
+                        $times = preg_split('/\s+/', $cell_value);
+                        if (count($times) === 2) {
+                            $jam_in = $times[0];
+                            $jam_out = $times[1];
+                        }
                     }
                 }
-            }
 
-            // Jika tidak ada gabungan, ambil dari baris in/out
-            if (empty($jam_in) && !empty($in_row[$col])) {
-                $val = trim($in_row[$col]);
-                if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $val)) {
-                    $keterangan = strtoupper($val);
-                } else {
-                    $jam_in = $val;
+                // Jika tidak ada gabungan, ambil dari baris in/out
+                if (empty($jam_in) && !empty($in_row[$col])) {
+                    $val = trim($in_row[$col]);
+                    if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $val)) {
+                        $keterangan = strtoupper($val);
+                    } else {
+                        $jam_in = $val;
+                    }
                 }
-            }
 
-            if (empty($jam_out) && !empty($out_row[$col])) {
-                $val = trim($out_row[$col]);
-                if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $val)) {
-                    $keterangan = strtoupper($val);
-                } else {
-                    $jam_out = $val;
+                if (empty($jam_out) && !empty($out_row[$col])) {
+                    $val = trim($out_row[$col]);
+                    if (preg_match('/^(S|I|C|DL|WFH|A)$/i', $val)) {
+                        $keterangan = strtoupper($val);
+                    } else {
+                        $jam_out = $val;
+                    }
                 }
+
+                // Format tanggal
+                $tgl_fix = date('Y-m-d', strtotime("$tahun-$bulan-$tanggal"));
+
+                $data_absensi_harian[] = [
+                    'nip' => $nip,
+                    'nama' => $nama,
+                    'tanggal' => $tgl_fix,
+                    'hari' => $hari,
+                    'jam_in' => $jam_in ?: null,
+                    'jam_out' => $jam_out ?: null,
+                    'keterangan' => $keterangan
+                ];
             }
-
-            // Format tanggal
-            $tgl_fix = date('Y-m-d', strtotime("$tahun-$bulan-$tanggal"));
-
-            $data_absensi_harian[] = [
-                'nip' => $nip,
-                'nama' => $nama,
-                'tanggal' => $tgl_fix,
-                'hari' => $hari,
-                'jam_in' => $jam_in ?: null,
-                'jam_out' => $jam_out ?: null,
-                'keterangan' => $keterangan
-            ];
         }
-    }
+        // Integrasi ke master data pegawai
+        foreach ($data_absensi_harian as $row) {
+            $nip = trim($row['nip']);
+            $nama = trim($row['nama']);
 
-    if (!empty($data_absensi_harian)) {
-        $this->AbsensiHarian_model->insert_batch($data_absensi_harian);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi berhasil diimpor!</div>');
-    } else {
-        $this->session->set_flashdata('message', '<div class="alert alert-warning">Tidak ada data valid ditemukan di file.</div>');
-    }
+            if (!$nip) continue;
 
-    redirect('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun);
-}
+            $pegawai = $this->Pegawai_model->get_by_nip_or_nama($nip, $nama);
+
+            if (!$pegawai) {
+                $this->Pegawai_model->insert([
+                    'nip' => $nip,
+                    'nama_pegawai' => $nama,
+                    'divisi' => null,
+                    'jabatan' => null,
+                ]);
+            }
+        }
+        if (!empty($data_absensi_harian)) {
+            $this->AbsensiHarian_model->insert_batch($data_absensi_harian);
+            $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi berhasil diimpor!</div>');
+        } else {
+            $this->session->set_flashdata('message', '<div class="alert alert-warning">Tidak ada data valid ditemukan di file.</div>');
+        }
+
+        redirect('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun);
+    }
 
 
     public function detail_harian($nip, $bulan = null, $tahun = null)
     {
         $bulan = $bulan ?? date('m');
         $tahun = $tahun ?? date('Y');
-        $this->load->model('AbsensiHarian_model');
 
-        $pegawai = $this->AbsensiHarian_model->get_pegawai_by_nip($nip);
+        $this->load->model('AbsensiHarian_model');
+        $this->load->model('Pegawai_model');
+
+        // ================================
+        // 1. Ambil master pegawai (utama)
+        // ================================
+        $pegawai = $this->Pegawai_model->get_by_nip($nip);
+
+        // ================================
+        // 2. Jika tidak ada di master → fallback ke absensi
+        // ================================
+        if (!$pegawai) {
+
+            $peg = $this->AbsensiHarian_model->get_pegawai_by_nip($nip);
+
+            if ($peg) {
+                // Konversi menjadi object, karena view memakai object
+                $pegawai = (object)[
+                    'id_pegawai'    => null,
+                    'nip'           => $peg->nip ?? $nip,
+                    'nama_pegawai'  => $peg->nama ?? "Nama Tidak Ada",
+                    'divisi'        => "Belum Diatur",
+                    'jabatan'       => "-"
+                ];
+            } else {
+                // Jika tetap tidak ketemu → minimal harus object
+                $pegawai = (object)[
+                    'id_pegawai'    => null,
+                    'nip'           => $nip,
+                    'nama_pegawai'  => "Tidak Dikenal",
+                    'divisi'        => "Belum Diatur",
+                    'jabatan'       => "-"
+                ];
+            }
+        }
+
+        // ================================
+        // 3. Ambil absensi sesuai nip/bulan/tahun
+        // ================================
         $data_absen = $this->AbsensiHarian_model->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
 
         $absensi = [];
@@ -564,6 +619,7 @@ public function import_harian()
             'total_hadir' => 0,
             'total_menit_telat' => 0,
             'total_tidak_finger' => 0,
+
             'kategori' => [
                 'Tepat Waktu' => 0,
                 'Telat < 30 Menit' => 0,
@@ -581,66 +637,74 @@ public function import_harian()
         ];
 
         foreach ($data_absen as $row) {
+
             $tanggal = $row['tanggal'];
             $hari_num = date('N', strtotime($tanggal));
             $hari = $row['hari'] ?: date('l', strtotime($tanggal));
 
             $jam_in = trim($row['jam_in']);
             $jam_out = trim($row['jam_out']);
-            $ket_db = isset($row['keterangan']) ? trim($row['keterangan']) : '';
+            $ket_db = trim($row['keterangan'] ?? '');
 
             $keterangan = null;
             $kategori = null;
             $menit_telat = 0;
             $status_pulang = '-';
 
-            // 🟩 1. Deteksi Sabtu / Minggu sebagai Libur
+            // ================================
+            // KATEGORI ABSENSI
+            // ================================
+
+            // LIBUR WEEKEND
             if ($hari_num == 6 || $hari_num == 7) {
                 $keterangan = 'Libur';
                 $kategori = 'Libur';
                 $summary['kategori']['Libur']++;
             }
 
-            // 🟦 2. Deteksi Keterangan (Sakit, Izin, Cuti, Alpa, Dinas Luar, DL, WFH)
-            elseif (
-                preg_match('/\b(S|SAKIT)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
-            ) {
+            // SAKIT
+            elseif (preg_match('/\b(S|SAKIT)\b/i', "{$jam_in} {$jam_out} {$ket_db}")) {
                 $keterangan = 'Sakit';
                 $kategori = 'Sakit';
                 $summary['kategori']['Sakit']++;
-            } elseif (
-                preg_match('/\b(I|IZIN)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
-            ) {
+            }
+
+            // IZIN
+            elseif (preg_match('/\b(I|IZIN)\b/i', "{$jam_in} {$jam_out} {$ket_db}")) {
                 $keterangan = 'Izin';
                 $kategori = 'Izin';
                 $summary['kategori']['Izin']++;
-            } elseif (
-                preg_match('/\b(C|CUTI)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
-            ) {
+            }
+
+            // CUTI
+            elseif (preg_match('/\b(C|CUTI)\b/i', "{$jam_in} {$jam_out} {$ket_db}")) {
                 $keterangan = 'Cuti';
                 $kategori = 'Cuti';
                 $summary['kategori']['Cuti']++;
-            } elseif (
-                preg_match('/\b(A|ALPA)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
-            ) {
+            }
+
+            // ALPA
+            elseif (preg_match('/\b(A|ALPA)\b/i', "{$jam_in} {$jam_out} {$ket_db}")) {
                 $keterangan = 'Tanpa Keterangan';
                 $kategori = 'Tanpa Keterangan';
                 $summary['kategori']['Tanpa Keterangan']++;
-            } elseif (
-                preg_match('/\b(DL|DINAS LUAR)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
-            ) {
+            }
+
+            // DINAS LUAR
+            elseif (preg_match('/\b(DL|DINAS LUAR)\b/i', "{$jam_in} {$jam_out} {$ket_db}")) {
                 $keterangan = 'Dinas Luar';
                 $kategori = 'Dinas Luar';
                 $summary['kategori']['Dinas Luar']++;
-            } elseif (
-                preg_match('/\b(WFH)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)
-            ) {
+            }
+
+            // WFH
+            elseif (preg_match('/\b(WFH)\b/i', "{$jam_in} {$jam_out} {$ket_db}")) {
                 $keterangan = 'WFH';
                 $kategori = 'WFH';
                 $summary['kategori']['WFH']++;
             }
 
-            // 🟨 3. Tidak Finger (jam masuk = jam pulang)
+            // TIDAK FINGER
             elseif ($jam_in == $jam_out && !empty($jam_in)) {
                 $keterangan = 'Tidak Finger';
                 $kategori = 'Tidak Finger';
@@ -648,31 +712,33 @@ public function import_harian()
                 $summary['kategori']['Tidak Finger']++;
             }
 
-            // 🟧 4. Kosong semua (tidak ada jam masuk & keluar)
-            elseif ((empty($jam_in) || $jam_in == '00:00:00') && (empty($jam_out) || $jam_out == '00:00:00')) {
+            // KOSONG SEMUA
+            elseif ((empty($jam_in) || $jam_in == '00:00:00') &&
+                (empty($jam_out) || $jam_out == '00:00:00')
+            ) {
                 $keterangan = 'Tanpa Keterangan';
                 $kategori = 'Tanpa Keterangan';
                 $summary['kategori']['Tanpa Keterangan']++;
             }
 
-            // 🟥 5. Jika hadir normal → cek keterlambatan
+            // HADIR NORMAL & CEK TERLAMBAT
             else {
                 $jam_normal = strtotime("07:30");
                 $jam_in_time = strtotime($jam_in);
                 $selisih = max(0, round(($jam_in_time - $jam_normal) / 60));
 
-                if ($selisih == 0) {
+                if ($selisih == 0)
                     $kategori = 'Tepat Waktu';
-                } elseif ($selisih < 30) {
+                elseif ($selisih < 30)
                     $kategori = 'Telat < 30 Menit';
-                } elseif ($selisih <= 90) {
+                elseif ($selisih <= 90)
                     $kategori = 'Telat 30–90 Menit';
-                } else {
+                else
                     $kategori = 'Telat > 90 Menit';
-                }
 
                 $status_pulang = 'Normal';
                 $menit_telat = $selisih;
+
                 $keterangan = 'Hadir';
                 $summary['total_menit_telat'] += $menit_telat;
                 $summary['total_hadir']++;
@@ -691,7 +757,9 @@ public function import_harian()
             ];
         }
 
-        // 🔢 Konversi total menit ke hari/jam/menit
+        // ================================
+        // 4. Konversi total menit
+        // ================================
         $total = $summary['total_menit_telat'];
         $summary['konversi_telat'] = [
             'hari' => floor($total / (8 * 60)),
@@ -699,10 +767,11 @@ public function import_harian()
             'menit' => $total % 60
         ];
 
-        usort($absensi, function ($a, $b) {
-            return strtotime($a['tanggal']) <=> strtotime($b['tanggal']);
-        });
+        usort($absensi, fn($a, $b) => strtotime($a['tanggal']) <=> strtotime($b['tanggal']));
 
+        // ================================
+        // 5. Data Final ke View
+        // ================================
         $data = [
             'pegawai' => $pegawai,
             'absensi' => $absensi,
@@ -710,10 +779,14 @@ public function import_harian()
             'bulan' => $bulan,
             'tahun' => $tahun,
             'title' => 'Detail Absensi Harian',
-            'user' => $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array()
+            'user' => $this->db->get_where('user', [
+                'email' => $this->session->userdata('email')
+            ])->row_array()
         ];
 
-        // 🌤️ Data Cuaca
+        // ================================
+        // 6. Weather API (tetap pakai punya abang)
+        // ================================
         $latitude = -6.3452;
         $longitude = 106.6725;
         $api_url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=Asia%2FJakarta";
@@ -756,6 +829,6 @@ public function import_harian()
         $this->load->view('template/topbar', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('absensi/harian/detail', $data);
-        $this->load->view('template/footer', $data);
+        $this->load->view('template/footer');
     }
 }

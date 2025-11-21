@@ -13,9 +13,11 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
-                        <h5>Data Pegawai: <strong><?= $pegawai ? htmlspecialchars($pegawai['nama']) : '-' ?></strong></h5>
+                        <h5>Data Pegawai:
+                            <strong><?= $pegawai ? htmlspecialchars($pegawai->nama_pegawai) : '-' ?></strong>
+                        </h5>
                         <small>
-                            NIP: <?= $pegawai ? htmlspecialchars($pegawai['nip']) : '-' ?> —
+                            NIP: <?= $pegawai ? htmlspecialchars($pegawai->nip) : '-' ?> —
                             Periode: <?= date("F Y", strtotime("{$tahun}-{$bulan}-01")) ?>
                         </small>
                     </div>
