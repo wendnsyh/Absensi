@@ -544,17 +544,24 @@ class Absensi extends CI_Controller
             $nip = trim($row['nip']);
             $nama = trim($row['nama']);
 
-            if (!$nip) continue;
+            if (empty($nip)) continue;
 
-            $pegawai = $this->Pegawai_model->get_by_nip_or_nama($nip, $nama);
+            $pegawai = $this->Pegawai_model->get_by_nip($nip);
 
             if (!$pegawai) {
                 $this->Pegawai_model->insert([
                     'nip' => $nip,
                     'nama_pegawai' => $nama,
-                    'divisi' => null,
+                    'id_divisi' => null,
                     'jabatan' => null,
+                    'status_aktif' => 'aktif'
                 ]);
+            } else {
+                if (!empty($nama) && $pegawai['nama_pegawai'] != $nama) {
+                    $this->Pegawai_model->update($pegawai['id_pegawai'], [
+                        'nama_pegawai' => $nama
+                    ]);
+                }
             }
         }
         if (!empty($data_absensi_harian)) {

@@ -1,12 +1,11 @@
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
-class Pegawai extends CI_Controller
+class Divisi extends CI_Controller
 {
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('Pegawai_model');
         $this->load->model('Divisi_model');
         $this->load->library(['session', 'form_validation']);
     }
@@ -54,10 +53,8 @@ class Pegawai extends CI_Controller
 
     public function index()
     {
-        $data['title'] = 'Data Pegawai';
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-        $data['divisi_list'] = $this->Pegawai_model->get_divisi_list();
-        $data['pegawai'] = $this->Pegawai_model->get_all();
+        $data['title'] = 'Master Divisi';
+        $data['divisi'] = $this->Divisi_model->get_all();
         $this->set_weather_data($data);
         $data['user'] = $this->db->get_where('user', [
             'email' => $this->session->userdata('email')
@@ -66,57 +63,40 @@ class Pegawai extends CI_Controller
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('template/topbar', $data);
-        $this->load->view('pegawai/index', $data);
+        $this->load->view('divisi/index', $data);
         $this->load->view('template/footer');
     }
 
     public function add()
     {
-        $this->form_validation->set_rules('nip', 'NIP', 'required|trim');
-        $this->form_validation->set_rules('nama_pegawai', 'Nama', 'required|trim');
-
+        $this->form_validation->set_rules('nama_divisi', 'Nama Divisi', 'required|trim');
         if ($this->form_validation->run() === false) {
             $this->index();
             return;
         }
 
-        $data = [
-            'nama_pegawai' => $this->input->post('nama_pegawai', true),
-            'nip' => $this->input->post('nip', true),
-            
-            'id_divisi' => $this->input->post('id_divisi') ?: null
-        ];
-
-        $this->Pegawai_model->insert($data);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Pegawai berhasil ditambahkan!</div>');
-        redirect('pegawai');
+        $this->Divisi_model->insert(['nama_divisi' => $this->input->post('nama_divisi', true)]);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Divisi berhasil ditambahkan.</div>');
+        redirect('divisi');
     }
 
     public function edit($id)
     {
-        $this->form_validation->set_rules('nip', 'NIP', 'required|trim');
-        $this->form_validation->set_rules('nama_pegawai', 'Nama', 'required|trim');
-
+        $this->form_validation->set_rules('nama_divisi', 'Nama Divisi', 'required|trim');
         if ($this->form_validation->run() === false) {
             $this->index();
             return;
         }
 
-        $data = [
-            'nama_pegawai' => $this->input->post('nama_pegawai', true),
-            'nip' => $this->input->post('nip', true),
-            'id_divisi' => $this->input->post('id_divisi') ?: null
-        ];
-
-        $this->Pegawai_model->update($id, $data);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Pegawai berhasil diperbarui!</div>');
-        redirect('pegawai');
+        $this->Divisi_model->update($id, ['nama_divisi' => $this->input->post('nama_divisi', true)]);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Divisi berhasil diperbarui.</div>');
+        redirect('divisi');
     }
 
     public function delete($id)
     {
-        $this->Pegawai_model->delete($id);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Pegawai berhasil dihapus!</div>');
-        redirect('pegawai');
+        $this->Divisi_model->delete($id);
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Divisi berhasil dihapus.</div>');
+        redirect('divisi');
     }
 }
