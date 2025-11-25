@@ -1,89 +1,123 @@
-<?php $penilaian = $penilaian ?? []; ?>
 <div class="main-panel">
     <div class="content">
         <div class="page-inner">
+
             <div class="page-header">
-                <h4 class="page-title">Input Penilaian Karyawan</h4>
+                <h4 class="page-title">Input Penilaian SAW</h4>
+                <ul class="breadcrumbs">
+                    <li class="nav-home">
+                        <a href="<?= base_url('dashboard') ?>">
+                            <i class="flaticon-home"></i>
+                        </a>
+                    </li>
+                    <li class="separator"><i class="flaticon-right-arrow"></i></li>
+                    <li class="nav-item">Penilaian SAW</li>
+                </ul>
             </div>
 
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">Form Penilaian</h5>
+            <div class="card">
+                <div class="card-header">
+                    <h4>Filter Penilaian</h4>
                 </div>
+
                 <div class="card-body">
-                    <?= $this->session->flashdata('message') ?>
-                    <form action="<?= base_url('saw/input_penilaian?bulan=' . $bulan . '&tahun=' . $tahun) ?>" method="post" class="form-inline">
-                        <div class="form-group mr-2">
-                            <label class="mr-2">Pegawai</label>
-                            <select name="nip" class="form-control" required>
-                                <option value="">-- Pilih Pegawai --</option>
-                                <?php foreach ($pegawai as $p): ?>
-                                    <option value="<?= $p->nip ?>"><?= $p->nama_pegawai ?> (<?= $p->nip ?>)</option>
-                                <?php endforeach; ?>
+
+                    <form method="get" action="<?= base_url('saw/input_penilaian') ?>" class="row">
+
+                        <!-- Divisi -->
+                        <div class="form-group col-md-4">
+                            <label>Divisi</label>
+                            <select name="divisi" class="form-control">
+                                <option value="">Semua Divisi</option>
+                                <?php foreach ($divisi_list as $d): ?>
+                                    <option value="<?= $d->id_divisi ?>"
+                                        <?= ($divisi == $d->id_divisi) ? 'selected' : '' ?>>
+                                        <?= $d->nama_divisi ?>
+                                    </option>
+                                <?php endforeach ?>
                             </select>
                         </div>
 
-                        <div class="form-group mr-2">
-                            <label class="mr-2">Skills</label>
-                            <input type="number" name="skills" class="form-control" min="0" max="100" required>
+                        <!-- Periode Type -->
+                        <div class="form-group col-md-3">
+                            <label>Jenis Periode</label>
+                            <select name="periode_type" class="form-control" required>
+                                <option value="">Pilih Jenis</option>
+                                <option value="monthly"     <?= $periode_type == 'monthly'     ? 'selected' : '' ?>>Bulanan</option>
+                                <option value="quarterly"   <?= $periode_type == 'quarterly'   ? 'selected' : '' ?>>3 Bulanan</option>
+                                <option value="semester"    <?= $periode_type == 'semester'    ? 'selected' : '' ?>>6 Bulanan</option>
+                                <option value="yearly"      <?= $periode_type == 'yearly'      ? 'selected' : '' ?>>Tahunan</option>
+                            </select>
                         </div>
 
-                        <div class="form-group mr-2">
-                            <label class="mr-2">Attitude</label>
-                            <input type="number" name="attitude" class="form-control" min="0" max="100" required>
+                        <!-- Periode Key -->
+                        <div class="form-group col-md-3">
+                            <label>Periode</label>
+                            <input type="month" name="periode_key" class="form-control" value="<?= $periode_key ?>">
                         </div>
 
-                        <button class="btn btn-success">Simpan</button>
+                        <div class="form-group col-md-2">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary btn-block">Filter</button>
+                        </div>
+
                     </form>
                 </div>
             </div>
 
-            <div class="card mt-3 shadow-sm">
-                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Data Penilaian (Periode <?= $bulan ?>/<?= $tahun ?>)</h5>
-                    <form action="<?= base_url('saw/simpan_semua_penilaian?bulan=' . $bulan . '&tahun=' . $tahun) ?>" method="post" class="mb-0">
-                        <button class="btn btn-light btn-sm">Simpan Semua Nilai</button>
-                    </form>
-                </div>
+            <div class="card mt-3">
+                <div class="card-body">
 
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-bordered mb-0">
-                            <thead class="thead-dark text-center">
-                                <tr>
-                                    <th>No</th>
-                                    <th>NIP</th>
-                                    <th>Nama</th>
-                                    <th>Hari Kerja</th>
-                                    <th>Skills</th>
-                                    <th>Attitude</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (!empty($penilaian)): $no = 1;
-                                    foreach ($penilaian as $r): ?>
-                                        <tr class="text-center">
-                                            <td><?= $no++ ?></td>
-                                            <td><?= $r['nip'] ?></td>
-                                            <td class="text-left"><?= $r['nama'] ?></td>
-                                            <td><?= $r['hari_kerja'] ?></td>
-                                            <td>
-                                                <input type="hidden" name="nip[]" value="<?= $r['nip'] ?>">
-                                                <input type="number" name="skills[]" class="form-control text-center" value="<?= $r['skills'] ?>" min="0" max="100">
-                                            </td>
-                                            <td>
-                                                <input type="number" name="attitude[]" class="form-control text-center" value="<?= $r['attitude'] ?>" min="0" max="100">
-                                            </td>
-                                        </tr>
-                                    <?php endforeach;
-                                else: ?>
+                    <?php if (empty($pegawai_list)): ?>
+                        <div class="alert alert-warning text-center">
+                            Tidak ada pegawai untuk periode ini.
+                        </div>
+                    <?php else: ?>
+
+                        <form method="post" action="<?= base_url('saw/simpan_penilaian') ?>">
+
+                            <input type="hidden" name="periode_type" value="<?= $periode_type ?>">
+                            <input type="hidden" name="periode_key" value="<?= $periode_key ?>">
+
+                            <table class="table table-bordered table-dark">
+                                <thead>
                                     <tr>
-                                        <td colspan="6" class="text-center">Belum ada data penilaian untuk periode ini.</td>
+                                        <th>No</th>
+                                        <th>Nama Pegawai</th>
+                                        <th>NIP</th>
+                                        <th>Divisi</th>
+                                        <th>Kehadiran</th>
+                                        <th>Skill</th>
+                                        <th>Attitude</th>
                                     </tr>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+
+                                <tbody>
+
+                                <?php $no = 1; foreach ($pegawai_list as $p): ?>
+                                    <tr>
+                                        <td><?= $no++ ?></td>
+                                        <td><?= $p->nama_pegawai ?></td>
+                                        <td><?= $p->nip ?></td>
+                                        <td><?= $p->nama_divisi ?></td>
+                                        <td><?= $p->hari_kerja ?> hari</td>
+
+                                        <input type="hidden" name="id_pegawai[]" value="<?= $p->id_pegawai ?>">
+                                        <input type="hidden" name="kehadiran[]" value="<?= $p->hari_kerja ?>">
+
+                                        <td><input type="number" name="skill[]" class="form-control" min="0" max="100" required></td>
+                                        <td><input type="number" name="attitude[]" class="form-control" min="0" max="100" required></td>
+                                    </tr>
+                                <?php endforeach ?>
+
+                                </tbody>
+                            </table>
+
+                            <button class="btn btn-success btn-block">Simpan Semua Penilaian</button>
+                        </form>
+
+                    <?php endif ?>
+
                 </div>
             </div>
 
