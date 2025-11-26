@@ -3,8 +3,7 @@ class Divisi_model extends CI_Model
 {
     public function get_all()
     {
-        return $this->db->order_by('id_divisi', 'ASC')->get('divisi')->result();
-        // MUST return object
+        return $this->db->order_by('id_divisi', 'ASC')->get('divisi')->result_array();
     }
 
     public function insert($data)

@@ -3,14 +3,12 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 class Saw extends CI_Controller
 {
-
     public function __construct()
     {
         parent::__construct();
-        $this->load->model('Pegawai_model');
-        $this->load->model('Divisi_model');
         $this->load->model('Saw_model');
-        $this->load->model('AbsensiHarian_model');
+        $this->load->model('Divisi_model');
+        $this->load->model('Pegawai_model');
         $this->load->library(['session', 'form_validation']);
     }
 
@@ -24,13 +22,13 @@ class Saw extends CI_Controller
         $weather_data = @json_decode(@file_get_contents($api_url), true);
 
         if ($weather_data && isset($weather_data['current'])) {
-            $data['temperature']   = $weather_data['current']['temperature_2m'];
-            $data['wind_speed']    = $weather_data['current']['wind_speed_10m'];
-            $data['humidity']      = $weather_data['current']['relative_humidity_2m'];
-            $data['weather_code']  = $weather_data['current']['weather_code'];
-            $data['update_time']   = date('d M Y H:i', strtotime($weather_data['current']['time']));
-            $data['sunrise']       = date('H:i', strtotime($weather_data['daily']['sunrise'][0]));
-            $data['sunset']        = date('H:i', strtotime($weather_data['daily']['sunset'][0]));
+            $data['temperature']  = $weather_data['current']['temperature_2m'];
+            $data['wind_speed']   = $weather_data['current']['wind_speed_10m'];
+            $data['humidity']     = $weather_data['current']['relative_humidity_2m'];
+            $data['weather_code'] = $weather_data['current']['weather_code'];
+            $data['update_time']  = date('d M Y H:i', strtotime($weather_data['current']['time']));
+            $data['sunrise']      = date('H:i', strtotime($weather_data['daily']['sunrise'][0]));
+            $data['sunset']       = date('H:i', strtotime($weather_data['daily']['sunset'][0]));
         } else {
             $data['temperature'] = '-';
             $data['wind_speed']  = '-';
@@ -57,92 +55,17 @@ class Saw extends CI_Controller
 
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
     }
-
     public function index()
     {
-        $data['title'] = "Hasil Perhitungan SAW";
-        $data['divisi_list'] = $this->Divisi_model->get_all();
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-
+        $data['title'] = "Hasil Penilaian SAW";
         $this->set_weather_data($data);
 
-        $periode_type = $this->input->get('periode_type');
-        $periode_key  = $this->input->get('periode_key');
-        $divisi       = $this->input->get('divisi');
+        $data['user'] = $this->db->get_where('user', [
+            'email' => $this->session->userdata('email')
+        ])->row_array();
 
-        $data['periode_type'] = $periode_type;
-        $data['periode_key']  = $periode_key;
-        $data['divisi']       = $divisi;
-
-        if (!$periode_type || !$periode_key) {
-            $data['penilaian'] = [];
-            $data['normalisasi'] = [];
-            $data['ranking'] = [];
-        } else {
-
-            $penilaian = $this->Saw_model->get_penilaian($periode_type, $periode_key, $divisi);
-            $data['penilaian'] = $penilaian;
-
-            if ($penilaian) {
-
-                // Ambil max
-                $max_skill     = max(array_column($penilaian, 'skill'));
-                $max_attitude  = max(array_column($penilaian, 'attitude'));
-                $max_kehadiran = max(array_column($penilaian, 'kehadiran'));
-
-                $normal = [];
-                foreach ($penilaian as $p) {
-                    $normal[] = [
-                        'nama_pegawai' => $p['nama_pegawai'],
-                        'n_skill'      => $p['skill'] / $max_skill,
-                        'n_attitude'   => $p['attitude'] / $max_attitude,
-                        'n_kehadiran'  => $p['kehadiran'] / $max_kehadiran
-                    ];
-                }
-                $data['normalisasi'] = $normal;
-
-                // Bobot
-                $w1 = 0.4;
-                $w2 = 0.3;
-                $w3 = 0.3;
-
-                // Hitung nilai akhir
-                $ranking = [];
-                foreach ($normal as $n) {
-                    $ranking[] = [
-                        'nama_pegawai' => $n['nama_pegawai'],
-                        'nilai_akhir'  => ($n['n_skill'] * $w1) +
-                            ($n['n_attitude'] * $w2) +
-                            ($n['n_kehadiran'] * $w3)
-                    ];
-                }
-
-                usort($ranking, function ($a, $b) {
-                    return $b['nilai_akhir'] <=> $a['nilai_akhir'];
-                });
-
-                $data['ranking'] = $ranking;
-            } else {
-                $data['normalisasi'] = [];
-                $data['ranking'] = [];
-            }
-        }
-
-        $this->load->view('template/header', $data);
-        $this->load->view('template/sidebar', $data);
-        $this->load->view('template/topbar', $data);
-        $this->load->view('saw/index', $data);
-        $this->load->view('template/footer');
-    }
-
-
-    public function input_penilaian()
-    {
-        $data['title'] = "Input Penilaian SAW";
-        $data['divisi_list'] = $this->Divisi_model->get_all();
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-
-        $this->set_weather_data($data);
+        $data['divisi_list']   = $this->Divisi_model->get_all();
+        $data['periode_list']  = $this->Saw_model->get_periode_list();
 
         $periode_type = $this->input->get('periode_type');
         $periode_key  = $this->input->get('periode_key');
@@ -153,10 +76,84 @@ class Saw extends CI_Controller
         $data['divisi']       = $divisi;
 
         if ($periode_type && $periode_key) {
+            $penilaian = $this->Saw_model->get_penilaian($periode_type, $periode_key, $divisi);
 
+            if (!empty($penilaian)) {
+
+                $max_skill     = max(array_column($penilaian, 'skills'));
+                $max_attitude  = max(array_column($penilaian, 'attitude'));
+                $max_kehadiran = max(array_column($penilaian, 'hari_kerja'));
+
+                $normal = [];
+                foreach ($penilaian as $p) {
+                    $normal[] = [
+                        'raw'         => $p,
+                        'nama'        => $p['nama_pegawai'],
+                        'n_skill'     => $p['skills'] / $max_skill,
+                        'n_attitude'  => $p['attitude'] / $max_attitude,
+                        'n_kehadiran' => $p['hari_kerja'] / $max_kehadiran,
+                    ];
+                }
+
+                $bobot = $this->Saw_model->get_bobot();
+                $w1 = $bobot['skill'];
+                $w2 = $bobot['attitude'];
+                $w3 = $bobot['kehadiran'];
+
+                $ranking = [];
+                foreach ($normal as $n) {
+                    $ranking[] = [
+                        'nama'  => $n['nama'],
+                        'score' => ($n['n_skill'] * $w1) +
+                            ($n['n_attitude'] * $w2) +
+                            ($n['n_kehadiran'] * $w3),
+                        'raw'   => $n['raw']
+                    ];
+                }
+
+                usort($ranking, fn($a, $b) => $b['score'] <=> $a['score']);
+                $data['ranking'] = $ranking;
+            } else {
+                $data['ranking'] = [];
+            }
+        } else {
+            $data['ranking'] = [];
+        }
+
+        $this->load->view('template/header', $data);
+        $this->load->view('template/sidebar', $data);
+        $this->load->view('template/topbar', $data);
+        $this->load->view('saw/index', $data);
+        $this->load->view('template/footer');
+    }
+
+    public function input_penilaian()
+    {
+        $data['title'] = "Input Penilaian SAW";
+        $this->set_weather_data($data);
+
+        $data['user'] = $this->db->get_where('user', [
+            'email' => $this->session->userdata('email')
+        ])->row_array();
+
+        $data['periode_list'] = $this->Saw_model->get_periode_list();
+        $data['divisi_list']  = $this->Divisi_model->get_all();
+
+
+        $periode_type = $this->input->get('periode_type');
+        $periode_key  = $this->input->get('periode_key');
+        $divisi       = $this->input->get('divisi');
+
+        $data['periode_type'] = $periode_type;
+        $data['periode_key']  = $periode_key;
+        $data['divisi']       = $divisi;
+
+        if ($periode_type && $periode_key) {
             $data['pegawai_list'] = $this->Saw_model->get_pegawai_by_periode($periode_type, $periode_key, $divisi);
+            $data['existing_penilaian'] = $this->Saw_model->get_existing_penilaian($periode_type, $periode_key);
         } else {
             $data['pegawai_list'] = [];
+            $data['existing_penilaian'] = [];
         }
 
         $this->load->view('template/header', $data);
@@ -168,44 +165,58 @@ class Saw extends CI_Controller
 
     public function simpan_penilaian()
     {
-        $id_pegawai = $this->input->post('id_pegawai');
-        $skill      = $this->input->post('skill');
-        $attitude   = $this->input->post('attitude');
-        $kehadiran  = $this->input->post('kehadiran');
-
         $periode_type = $this->input->post('periode_type');
         $periode_key  = $this->input->post('periode_key');
 
-        foreach ($id_pegawai as $i => $idpg) {
-            $insert = [
-                'id_pegawai'   => $idpg,
-                'skill'        => $skill[$i],
-                'attitude'     => $attitude[$i],
-                'kehadiran'    => $kehadiran[$i],
+
+
+        $id_pegawai = $this->input->post('id_pegawai');
+        $nip        = $this->input->post('nip');
+        $skills     = $this->input->post('skills');
+        $attitude   = $this->input->post('attitude');
+        $hari_kerja = $this->input->post('hari_kerja');
+
+        for ($i = 0; $i < count($nip); $i++) {
+
+            $data = [
+                'id_pegawai'  => $id_pegawai[$i] ?: null,
+                'nip'         => $nip[$i],
+                'skills'      => $skills[$i],
+                'attitude'    => $attitude[$i],
+                'hari_kerja'  => $hari_kerja[$i],
                 'periode_type' => $periode_type,
-                'periode_key'  => $periode_key
+                'periode_key' => $periode_key
             ];
-            $this->Saw_model->insert_penilaian($insert);
+
+            $existing = $this->db
+                ->get_where("penilaian_karyawan", [
+                    'nip' => $nip[$i],
+                    'periode_type' => $periode_type,
+                    'periode_key' => $periode_key
+                ])
+                ->row_array();
+
+            if ($existing) {
+                $this->Saw_model->update_penilaian($existing['id_penilaian'], $data);
+            } else {
+                $this->Saw_model->insert_penilaian($data);
+            }
         }
 
         $this->session->set_flashdata('message', '<div class="alert alert-success">Penilaian berhasil disimpan.</div>');
-        redirect('saw/input');
+        redirect('saw/input_penilaian');
     }
-
-
-
 
     public function bobot()
     {
-        $data['title'] = "Pengaturan Bobot SAW";
-
-        // Ambil bobot dari database
-        $data['bobot'] = $this->Saw_model->get_bobot();
-
+        $data['title'] = "Bobot Penilaian SAW";
         $this->set_weather_data($data);
-        $data['user'] = $this->db
-            ->get_where('user', ['email' => $this->session->userdata('email')])
-            ->row_array();
+
+        $data['user'] = $this->db->get_where('user', [
+            'email' => $this->session->userdata('email')
+        ])->row_array();
+
+        $data['bobot'] = $this->Saw_model->get_bobot();
 
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
@@ -216,30 +227,28 @@ class Saw extends CI_Controller
 
     public function update_bobot()
     {
-        $skill = $this->input->post('skill');
-        $attitude = $this->input->post('attitude');
+        $skill     = $this->input->post('skill');
+        $attitude  = $this->input->post('attitude');
         $kehadiran = $this->input->post('kehadiran');
 
-        // Validasi jumlah bobot harus 1 (1.0)
         if (($skill + $attitude + $kehadiran) != 1) {
             $this->session->set_flashdata(
                 'message',
-                '<div class="alert alert-danger">Jumlah bobot harus 1.0</div>'
+                '<div class="alert alert-danger">Jumlah total bobot wajib 1.0</div>'
             );
             redirect('saw/bobot');
         }
 
         $this->Saw_model->update_bobot([
-            'skill' => $skill,
-            'attitude' => $attitude,
+            'skill'     => $skill,
+            'attitude'  => $attitude,
             'kehadiran' => $kehadiran
         ]);
 
         $this->session->set_flashdata(
             'message',
-            '<div class="alert alert-success">Bobot berhasil diperbarui!</div>'
+            '<div class="alert alert-success">Bobot berhasil diperbarui.</div>'
         );
-
         redirect('saw/bobot');
     }
 }
