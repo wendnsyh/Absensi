@@ -117,10 +117,25 @@
                                                 <td><?= htmlspecialchars($p['nama']) ?></td>
                                                 <td><?= htmlspecialchars($p['nip']) ?></td>
 
-                                                <td>
-                                                    <?= isset($p['id_divisi']) && isset($p['nama_divisi'])
-                                                        ? htmlspecialchars($p['nama_divisi'])
-                                                        : '-' ?>
+                                                <td class="text-center">
+                                                    <?php
+                                                    $divisi_name = "-";
+
+                                                    if (!empty($p['id_divisi'])) {
+                                                        foreach ($divisi_list as $d) {
+                                                            if ($d['id_divisi'] == $p['id_divisi']) {
+                                                                $divisi_name = $d['nama_divisi'];
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+
+                                                    if ($divisi_name == "-") {
+                                                        echo '<span class="badge badge-warning">Belum Diatur</span>';
+                                                    } else {
+                                                        echo htmlspecialchars($divisi_name);
+                                                    }
+                                                    ?>
                                                 </td>
 
                                                 <td class="text-center">

@@ -548,7 +548,14 @@ class Absensi extends CI_Controller
 
             $pegawai = $this->Pegawai_model->get_by_nip($nip);
 
+            // handle object atau array
+            $is_obj = is_object($pegawai);
+
+            $nama_db   = $is_obj ? $pegawai->nama_pegawai : ($pegawai['nama_pegawai'] ?? null);
+            $id_db     = $is_obj ? $pegawai->id_pegawai   : ($pegawai['id_pegawai']   ?? null);
+
             if (!$pegawai) {
+                // jika pegawai belum ada → insert baru
                 $this->Pegawai_model->insert([
                     'nip' => $nip,
                     'nama_pegawai' => $nama,
@@ -557,8 +564,9 @@ class Absensi extends CI_Controller
                     'status_aktif' => 'aktif'
                 ]);
             } else {
-                if (!empty($nama) && $pegawai['nama_pegawai'] != $nama) {
-                    $this->Pegawai_model->update($pegawai['id_pegawai'], [
+                // jika nama berubah → update nama_pegawai
+                if (!empty($nama) && $nama_db != $nama) {
+                    $this->Pegawai_model->update($id_db, [
                         'nama_pegawai' => $nama
                     ]);
                 }

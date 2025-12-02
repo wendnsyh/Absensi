@@ -110,45 +110,40 @@ class Saw_model extends CI_Model
     {
         list($start, $end) = $this->get_date_range($periode_type, $periode_key);
 
-        // safety
         if (!$start || !$end) return [];
 
         $this->db->select("
-            ah.nip,
-            COALESCE(p.id_pegawai, NULL) AS id_pegawai,
-            COALESCE(p.nama_pegawai, ah.nama) AS nama,
-            COALESCE(p.id_divisi, NULL) AS id_divisi,
-            COUNT(DISTINCT CASE 
-                WHEN (ah.jam_in IS NOT NULL AND ah.jam_in != '') OR (ah.jam_out IS NOT NULL AND ah.jam_out != '') THEN ah.tanggal
-                ELSE NULL END
-            ) AS hari_kerja
-        ", false);
+        ah.nip,
+        p.id_pegawai,
+        p.nama_pegawai AS nama,
+        p.id_divisi,
+        d.nama_divisi,
+        COUNT(
+            DISTINCT CASE 
+                WHEN (ah.jam_in IS NOT NULL AND ah.jam_in != '') 
+                  OR (ah.jam_out IS NOT NULL AND ah.jam_out != '') 
+                THEN ah.tanggal 
+            END
+        ) AS hari_kerja
+    ");
 
         $this->db->from("absensi_harian ah");
         $this->db->join("pegawai p", "p.nip = ah.nip", "left");
+        $this->db->join("divisi d", "d.id_divisi = p.id_divisi", "left");
+
         $this->db->where("ah.tanggal >=", $start);
         $this->db->where("ah.tanggal <=", $end);
 
         if (!empty($divisi)) {
-            // hanya yg punya divisi tertentu (master pegawai)
             $this->db->where("p.id_divisi", $divisi);
         }
 
         $this->db->group_by("ah.nip");
         $this->db->order_by("nama", "ASC");
 
-        $rows = $this->db->get()->result_array();
-
-        // Pastikan setiap row punya keys yang konsisten (id_pegawai bisa null)
-        foreach ($rows as &$r) {
-            $r['id_pegawai'] = isset($r['id_pegawai']) ? $r['id_pegawai'] : null;
-            $r['id_divisi'] = isset($r['id_divisi']) ? $r['id_divisi'] : null;
-            $r['hari_kerja'] = (int) ($r['hari_kerja'] ?? 0);
-        }
-        unset($r);
-
-        return $rows;
+        return $this->db->get()->result_array();
     }
+
 
     /* ------------------------------------------------
        Hitung total hadir berdasarkan id_pegawai OR nip untuk rentang tanggal
@@ -182,7 +177,15 @@ class Saw_model extends CI_Model
         $res = $this->db->get()->row_array();
         return (int) ($res['total'] ?? 0);
     }
+    public function insert_penilaian($data)
+    {
+        return $this->db->insert("penilaian_karyawan", $data);
+    }
 
+    public function update_penilaian($id, $data)
+    {
+        return $this->db->where("id_penilaian", $id)->update("penilaian_karyawan", $data);
+    }
     /* ------------------------------------------------
        Get existing penilaian untuk periode => return associative array keyed by id_pegawai or nip
     -------------------------------------------------*/
