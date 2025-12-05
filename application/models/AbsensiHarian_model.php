@@ -5,6 +5,9 @@ class AbsensiHarian_model extends CI_Model
 {
     private $table = 'absensi_harian';
 
+    /* ==========================
+       INSERT
+    ========================== */
     public function insert_batch($data)
     {
         if (!empty($data)) {
@@ -13,46 +16,125 @@ class AbsensiHarian_model extends CI_Model
         return false;
     }
 
+    /* ==========================
+       GET PER NIP + PERIODE
+    ========================== */
     public function get_by_nip_bulan_tahun($nip, $bulan, $tahun)
     {
-        $this->db->select('nip, nama, tanggal, hari, jam_in, jam_out, keterangan');
-        $this->db->from($this->table);
-        $this->db->where('nip', $nip);
-        $this->db->where('MONTH(tanggal)', $bulan);
-        $this->db->where('YEAR(tanggal)', $tahun);
-        $this->db->order_by('tanggal', 'ASC');
-        return $this->db->get()->result_array();
+        return $this->db
+            ->select('nip, nama, tanggal, hari, jam_in, jam_out, keterangan')
+            ->from($this->table)
+            ->where('nip', $nip)
+            ->where('MONTH(tanggal)', $bulan)
+            ->where('YEAR(tanggal)', $tahun)
+            ->order_by('tanggal', 'ASC')
+            ->get()
+            ->result_array();
     }
 
+    /* ==========================
+       REKAP BULANAN (Pegawai List)
+    ========================== */
     public function get_rekap_bulanan($bulan, $tahun)
     {
-        $this->db->select('nip, nama, COUNT(*) as total_hari');
+        return $this->db
+            ->select("
+                a.nip,
+                COALESCE(p.nama_pegawai, a.nama) AS nama_pegawai
+            ")
+            ->from("absensi_harian a")
+            ->join("pegawai p", "p.nip = a.nip", "left")
+            ->where("MONTH(a.tanggal)", $bulan)
+            ->where("YEAR(a.tanggal)", $tahun)
+            ->group_by("a.nip")
+            ->order_by("nama_pegawai", "ASC")
+            ->get()
+            ->result_array();
+    }
+
+    /* ==========================
+       LIST PEGAWAI ABSENSI
+    ========================== */
+    public function get_all($limit, $start, $bulan = null, $tahun = null, $keyword = null)
+    {
+        $this->db->select('nip, nama');
         $this->db->from($this->table);
-        $this->db->where('MONTH(tanggal)', $bulan);
-        $this->db->where('YEAR(tanggal)', $tahun);
+
+        if ($bulan)  $this->db->where('MONTH(tanggal)', $bulan);
+        if ($tahun)  $this->db->where('YEAR(tanggal)', $tahun);
+
+        if (!empty($keyword)) {
+            $this->db->group_start();
+            $this->db->like('nama', $keyword);
+            $this->db->or_like('nip', $keyword);
+            $this->db->group_end();
+        }
+
         $this->db->group_by('nip');
+        $this->db->order_by('nama', 'ASC');
+        $this->db->limit($limit, $start);
+
         return $this->db->get()->result_array();
     }
 
-    public function get_all()
+    public function count_all($bulan = null, $tahun = null, $keyword = null)
     {
-        return $this->db->get($this->table)->result_array();
+        $this->db->from($this->table);
+
+        if ($bulan) $this->db->where('MONTH(tanggal)', $bulan);
+        if ($tahun) $this->db->where('YEAR(tanggal)', $tahun);
+
+        if (!empty($keyword)) {
+            $this->db->group_start();
+            $this->db->like('nama', $keyword);
+            $this->db->or_like('nip', $keyword);
+            $this->db->group_end();
+        }
+
+        $this->db->group_by('nip');
+        return $this->db->get()->num_rows();
     }
 
+    /* ==========================
+       GET DETAIL PAGE
+    ========================== */
+    public function get_harian_full($bulan, $tahun)
+    {
+        return $this->db
+            ->select("
+                a.*,
+                COALESCE(p.nama_pegawai, a.nama) AS nama_fix,
+                COALESCE(p.nip, a.nip) AS nip_fix
+            ")
+            ->from('absensi_harian a')
+            ->join('pegawai p', 'p.nip = a.nip', 'left')
+            ->where('MONTH(a.tanggal)', $bulan)
+            ->where('YEAR(a.tanggal)', $tahun)
+            ->order_by('a.nip', 'ASC')
+            ->order_by('a.tanggal', 'ASC')
+            ->get()
+            ->result();
+    }
+
+    /* ==========================
+       DETAIL PER NIP
+    ========================== */
     public function get_pegawai_by_nip($nip)
     {
         return $this->db
             ->select('id_pegawai, nip, nama_pegawai, divisi, jabatan')
-            ->from('pegawai')
             ->where('nip', $nip)
-            ->get()
-            ->row();  // return OBJECT
+            ->get('pegawai')
+            ->row();
     }
 
-    // 🔹 Ambil semua data absensi + detail perhitungan
+    /* ==========================
+       PERHITUNGAN DETAIL
+    ========================== */
     public function get_detail_absensi($nip, $bulan, $tahun)
     {
         $data = $this->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
+
         $result = [];
 
         $jam_normal_masuk = strtotime('07:30:00');
@@ -61,6 +143,7 @@ class AbsensiHarian_model extends CI_Model
 
         $total_menit_telat = 0;
         $total_tidak_finger = 0;
+
         $kategori_count = [
             'Tepat Waktu' => 0,
             'Telat < 30 Menit' => 0,
@@ -77,73 +160,66 @@ class AbsensiHarian_model extends CI_Model
         ];
 
         foreach ($data as $d) {
+
             $tanggal = $d['tanggal'];
             $hari = date('D', strtotime($tanggal));
             $jam_in = trim($d['jam_in']);
             $jam_out = trim($d['jam_out']);
-            $ket_db = isset($d['keterangan']) ? trim($d['keterangan']) : '';
+            $ket_db = trim($d['keterangan'] ?? '');
 
-            $kategori_telat = '';
-            $status_pulang = '';
+            $kategori_telat = '-';
+            $status_pulang = '-';
             $menit_telat = 0;
             $keterangan = '-';
 
-            // Libur (Sabtu/Minggu)
+            // LIBUR
             if ($hari == 'Sat' || $hari == 'Sun') {
                 $kategori_telat = 'Libur';
-                $status_pulang = 'Libur';
-                $keterangan = 'Libur';
                 $kategori_count['Libur']++;
             }
 
-            // Keterangan dari jam_in/jam_out/keterangan
-            elseif (preg_match('/\b(S|SAKIT)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)) {
-                $keterangan = 'Sakit';
+            // SA -> Sakit
+            elseif (preg_match('/\b(S|SAKIT)\b/i', $jam_in . " " . $jam_out . " " . $ket_db)) {
                 $kategori_telat = 'Sakit';
                 $kategori_count['Sakit']++;
-            } elseif (preg_match('/\b(I|IZIN)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)) {
-                $keterangan = 'Izin';
+            }
+
+            // I -> Izin
+            elseif (preg_match('/\b(I|IZIN)\b/i', $jam_in . " " . $jam_out . " " . $ket_db)) {
                 $kategori_telat = 'Izin';
                 $kategori_count['Izin']++;
-            } elseif (preg_match('/\b(C|CUTI)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)) {
-                $keterangan = 'Cuti';
+            }
+
+            // C -> Cuti
+            elseif (preg_match('/\b(C|CUTI)\b/i', $jam_in . " " . $jam_out . " " . $ket_db)) {
                 $kategori_telat = 'Cuti';
                 $kategori_count['Cuti']++;
-            } elseif (preg_match('/\b(A|ALPA)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)) {
-                $keterangan = 'Tanpa Keterangan';
-                $kategori_telat = 'Tanpa Keterangan';
-                $kategori_count['Tanpa Keterangan']++;
-            } elseif (preg_match('/\b(DL|DINAS LUAR)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)) {
-                $keterangan = 'Dinas Luar';
+            }
+
+            // DL
+            elseif (preg_match('/\b(DL|DINAS LUAR)\b/i', $jam_in . " " . $jam_out . " " . $ket_db)) {
                 $kategori_telat = 'Dinas Luar';
                 $kategori_count['Dinas Luar']++;
-            } elseif (preg_match('/\b(WFH)\b/i', $jam_in . ' ' . $jam_out . ' ' . $ket_db)) {
-                $keterangan = 'WFH';
+            }
+
+            // WFH
+            elseif (preg_match('/\b(WFH)\b/i', $jam_in . " " . $jam_out . " " . $ket_db)) {
                 $kategori_telat = 'WFH';
                 $kategori_count['WFH']++;
             }
 
             // Tidak finger
-            elseif (($jam_in == $jam_out && !empty($jam_in)) || ($jam_in == '00:00:00' && $jam_out == '00:00:00')) {
+            elseif (empty($jam_in) || empty($jam_out)) {
                 $kategori_telat = 'Tidak Finger';
-                $status_pulang = 'Tidak Finger';
-                $keterangan = 'Tidak Finger';
-                $total_tidak_finger++;
                 $kategori_count['Tidak Finger']++;
+                $total_tidak_finger++;
             }
 
-            // Kosong
-            elseif (empty($jam_in) && empty($jam_out)) {
-                $kategori_telat = 'Tanpa Keterangan';
-                $keterangan = 'Tanpa Keterangan';
-                $kategori_count['Tanpa Keterangan']++;
-            }
-
-            // Hadir normal
+            // HADIR NORMAL
             else {
                 $masuk = strtotime($jam_in);
-                $selisih = max(0, ($masuk - $jam_normal_masuk) / 60);
-                $menit_telat = round($selisih);
+                $selisih_menit = max(0, ($masuk - $jam_normal_masuk) / 60);
+                $menit_telat = round($selisih_menit);
 
                 if ($menit_telat == 0) {
                     $kategori_telat = 'Tepat Waktu';
@@ -160,8 +236,6 @@ class AbsensiHarian_model extends CI_Model
                 }
 
                 $total_menit_telat += $menit_telat;
-                $status_pulang = 'Normal';
-                $keterangan = 'Hadir';
             }
 
             $result[] = [
@@ -169,15 +243,13 @@ class AbsensiHarian_model extends CI_Model
                 'hari' => $hari,
                 'jam_in' => $jam_in ?: '-',
                 'jam_out' => $jam_out ?: '-',
-                'keterangan' => $keterangan,
                 'kategori_telat' => $kategori_telat,
-                'menit_telat' => $menit_telat,
-                'status_pulang' => $status_pulang
+                'menit_telat' => $menit_telat
             ];
         }
 
-        // Konversi total menit ke hari/jam/menit
-        $total_hari = floor($total_menit_telat / $menit_per_hari);
+        // KONVERSI MENIT
+        $hari_telat = floor($total_menit_telat / $menit_per_hari);
         $sisa = $total_menit_telat % $menit_per_hari;
         $jam = floor($sisa / 60);
         $menit = $sisa % 60;
@@ -186,9 +258,9 @@ class AbsensiHarian_model extends CI_Model
             'absensi' => $result,
             'summary' => [
                 'total_tidak_finger' => $total_tidak_finger,
-                'total_menit_telat' => round($total_menit_telat),
+                'total_menit_telat' => $total_menit_telat,
                 'konversi_telat' => [
-                    'hari' => $total_hari,
+                    'hari' => $hari_telat,
                     'jam' => $jam,
                     'menit' => $menit
                 ],
@@ -197,86 +269,55 @@ class AbsensiHarian_model extends CI_Model
         ];
     }
 
-    public function get_statistik($bulan, $tahun)
-    {
-        $this->db->where('MONTH(tanggal)', $bulan);
-        $this->db->where('YEAR(tanggal)', $tahun);
-        $data = $this->db->get($this->table)->result_array();
-
-        $kategori = [
-            'Tepat Waktu' => 0,
-            'Telat < 30 Menit' => 0,
-            'Telat 30–90 Menit' => 0,
-            'Telat > 90 Menit' => 0,
-            'Tidak Finger' => 0,
-            'Sakit' => 0,
-            'Izin' => 0,
-            'Cuti' => 0,
-            'Dinas Luar' => 0,
-            'WFH' => 0,
-            'Tanpa Keterangan' => 0,
-            'Libur' => 0
-        ];
-
-        foreach ($data as $d) {
-            if (isset($kategori[$d['kategori_telat']])) {
-                $kategori[$d['kategori_telat']]++;
-            }
-        }
-
-        return $kategori;
-    }
-
-    public function get_by_bulan_tahun($bulan, $tahun)
-    {
-        $this->db->select('nip, nama, tanggal, hari, jam_in, jam_out, keterangan');
-        $this->db->from($this->table);
-        $this->db->where('MONTH(tanggal)', $bulan);
-        $this->db->where('YEAR(tanggal)', $tahun);
-        $this->db->order_by('tanggal', 'ASC');
-        return $this->db->get()->result_array();
-    }
-
-    public function get_all_by_bulan_tahun($bulan, $tahun)
-    {
-        $this->db->where('MONTH(tanggal)', $bulan);
-        $this->db->where('YEAR(tanggal)', $tahun);
-        return $this->db->get($this->table)->result_array();
-    }
-
+    /* ==========================
+       GRAFIK & STATISTIK
+    ========================== */
     public function get_tren_kehadiran($bulan, $tahun)
     {
-        $this->db->select('tanggal, COUNT(nip) as total_hadir');
-        $this->db->from($this->table);
-        $this->db->where('MONTH(tanggal)', $bulan);
-        $this->db->where('YEAR(tanggal)', $tahun);
-        $this->db->group_by('tanggal');
-        $this->db->order_by('tanggal', 'ASC');
-        return $this->db->get()->result();
+        return $this->db
+            ->select('tanggal, COUNT(nip) as total_hadir')
+            ->from($this->table)
+            ->where('MONTH(tanggal)', $bulan)
+            ->where('YEAR(tanggal)', $tahun)
+            ->group_by('tanggal')
+            ->order_by('tanggal', 'ASC')
+            ->get()
+            ->result();
     }
 
     public function get_rata_jam_masuk_pulang($bulan, $tahun)
     {
-        $this->db->select('AVG(TIME_TO_SEC(jam_in)) as avg_in, AVG(TIME_TO_SEC(jam_out)) as avg_out');
-        $this->db->from($this->table);
-        $this->db->where('MONTH(tanggal)', $bulan);
-        $this->db->where('YEAR(tanggal)', $tahun);
-        $result = $this->db->get()->row();
+        $avg = $this->db
+            ->select('AVG(TIME_TO_SEC(jam_in)) as avg_in, AVG(TIME_TO_SEC(jam_out)) as avg_out')
+            ->from($this->table)
+            ->where('MONTH(tanggal)', $bulan)
+            ->where('YEAR(tanggal)', $tahun)
+            ->get()
+            ->row();
 
-        if ($result) {
-            return [
-                'rata_masuk' => gmdate('H:i', $result->avg_in),
-                'rata_pulang' => gmdate('H:i', $result->avg_out),
-            ];
-        }
-        return ['rata_masuk' => '-', 'rata_pulang' => '-'];
+        return [
+            'rata_masuk' => $avg->avg_in ? gmdate('H:i', $avg->avg_in) : '-',
+            'rata_pulang' => $avg->avg_out ? gmdate('H:i', $avg->avg_out) : '-'
+        ];
     }
 
     public function get_unique_pegawai()
     {
-        $this->db->select('nip, nama');
-        $this->db->group_by('nip');
-        $this->db->order_by('nama', 'ASC');
-        return $this->db->get('absensi_harian')->result_array();
+        return $this->db
+            ->select('nip, nama')
+            ->group_by('nip')
+            ->order_by('nama', 'ASC')
+            ->get($this->table)
+            ->result_array();
+    }
+
+    public function get_by_bulan_tahun($bulan, $tahun)
+    {
+        $this->db->select('*');
+        $this->db->from('absensi_harian');
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        $this->db->order_by('tanggal', 'ASC');
+        return $this->db->get()->result();
     }
 }

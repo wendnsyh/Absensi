@@ -398,7 +398,12 @@ class Absensi extends CI_Controller
         $this->pagination->initialize($config);
 
         $data['start'] = $this->uri->segment(3) ?: 0;
-        $data['absensi_harian'] = $this->AbsensiHarian_model->get_all($config['per_page'], $data['start'], $bulan_param, $tahun_param, $keyword); // Kirim keyword ke model
+        $data['absensi_harian'] = $this->AbsensiHarian_model->get_harian_full(
+            $bulan_param,
+            $tahun_param
+        );
+        $data['rekap'] = $this->AbsensiHarian_model->get_rekap_bulanan($bulan_param, $tahun_param);
+
         $data['pegawai'] = $this->Absensi_model->get_all_pegawai();
 
 
@@ -845,5 +850,44 @@ class Absensi extends CI_Controller
         $this->load->view('template/sidebar', $data);
         $this->load->view('absensi/harian/detail', $data);
         $this->load->view('template/footer');
+    }
+
+    public function hapus_rekap($nip, $bulan, $tahun)
+    {
+        if ($nip == "-" || empty($nip)) {
+            $this->session->set_flashdata('message', '<div class="alert alert-danger">Tidak dapat menghapus data tanpa NIP.</div>');
+            redirect('absensi/absen_harian');
+        }
+
+        $this->db->where('nip', $nip);
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        $this->db->delete('absensi_harian');
+
+        $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi berhasil dihapus.</div>');
+        redirect('absensi/absen_harian');
+    }
+
+    public function edit_status($nip, $bulan, $tahun)
+    {
+        $data['absen'] = $this->AbsensiHarian_model->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
+        $data['nip'] = $nip;
+        $data['bulan'] = $bulan;
+        $data['tahun'] = $tahun;
+
+        $this->load->view('absensi/harian/edit_status', $data);
+    }
+
+    public function update_status()
+    {
+        $id = $this->input->post('id');
+        $status = $this->input->post('status');
+
+        $this->AbsensiHarian_model->update($id, [
+            'status' => $status
+        ]);
+
+        $this->session->set_flashdata('message', 'Status berhasil diperbarui!');
+        redirect('absensi/absen_harian');
     }
 }

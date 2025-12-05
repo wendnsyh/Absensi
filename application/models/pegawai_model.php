@@ -14,6 +14,7 @@ class Pegawai_model extends CI_Model
             ->row(); // OBJECT
     }
 
+    
     public function get_by_nip($nip)
     {
         return $this->db

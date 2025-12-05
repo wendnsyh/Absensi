@@ -44,23 +44,28 @@ class Dashboard extends CI_Controller
         $kalender = [];
 
         foreach ($all_absensi as $row) {
-            $hari_num = date('N', strtotime($row['tanggal']));
+
+            // akses object pakai -> bukan ['']
+            $hari_num = date('N', strtotime($row->tanggal));
             $status = '';
             $color = '#007bff';
 
-            // Deteksi libur (Sabtu/Minggu)
+            // Libur Sabtu Minggu
             if ($hari_num == 6 || $hari_num == 7) {
                 $statistik['Libur']++;
                 $status = 'Libur';
                 $color = '#17a2b8';
-            } elseif (empty($row['jam_in']) || empty($row['jam_out']) || trim($row['jam_in']) === trim($row['jam_out'])) {
+
+                // Tidak finger
+            } elseif (empty($row->jam_in) || empty($row->jam_out) || trim($row->jam_in) === trim($row->jam_out)) {
                 $statistik['Tidak Finger']++;
                 $status = 'Tidak Finger';
                 $color = '#6c757d';
             } else {
                 $jam_normal = strtotime('07:30');
-                $jam_in = strtotime($row['jam_in']);
-                $selisih = max(0, round(($jam_in - $jam_normal) / 60));
+                $jam_in = strtotime($row->jam_in);
+
+                $selisih = max(0, round(($jam_in - $jam_normal) / 60)); // menit terlambat
 
                 if ($selisih === 0) {
                     $statistik['Tepat Waktu']++;
@@ -83,7 +88,7 @@ class Dashboard extends CI_Controller
 
             $kalender[] = [
                 'title' => $status,
-                'start' => $row['tanggal'],
+                'start' => $row->tanggal,
                 'color' => $color
             ];
         }
