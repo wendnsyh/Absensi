@@ -297,4 +297,56 @@ class Saw_model extends CI_Model
     {
         return $this->db->update("bobot", $data);
     }
+
+    public function hitung_saw($periode_type, $periode_key, $divisi = null)
+    {
+        // 1. Ambil data mentah
+        $rows = $this->get_penilaian($periode_type, $periode_key, $divisi);
+        if (empty($rows)) return [];
+
+        // 2. Ambil bobot (dalam persen)
+        $bobot = $this->get_bobot();
+
+        $w_skill     = $bobot['skill'] / 100;
+        $w_attitude  = $bobot['attitude'] / 100;
+        $w_hadir     = $bobot['kehadiran'] / 100;
+
+        // 3. Cari nilai maksimum (benefit)
+        $max = [
+            'skill'     => max(array_column($rows, 'skill')),
+            'attitude'  => max(array_column($rows, 'attitude')),
+            'kehadiran' => max(array_column($rows, 'kehadiran'))
+        ];
+
+        $result = [];
+
+        foreach ($rows as $r) {
+
+            // 4. NORMALISASI
+            $n_skill     = $max['skill'] > 0 ? $r['skill'] / $max['skill'] : 0;
+            $n_attitude  = $max['attitude'] > 0 ? $r['attitude'] / $max['attitude'] : 0;
+            $n_hadir     = $max['kehadiran'] > 0 ? $r['kehadiran'] / $max['kehadiran'] : 0;
+
+            // 5. NILAI AKHIR
+            $score =
+                ($n_skill * $w_skill) +
+                ($n_attitude * $w_attitude) +
+                ($n_hadir * $w_hadir);
+
+            $result[] = [
+                'raw' => $r,
+                'normalisasi' => [
+                    'skill' => round($n_skill, 4),
+                    'attitude' => round($n_attitude, 4),
+                    'kehadiran' => round($n_hadir, 4)
+                ],
+                'score' => round($score, 4)
+            ];
+        }
+
+        // 6. Ranking
+        usort($result, fn($a, $b) => $b['score'] <=> $a['score']);
+
+        return $result;
+    }
 }

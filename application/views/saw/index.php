@@ -101,6 +101,7 @@ foreach ($divisi_list as $d) {
                                     <th style="width:150px">NIP</th>
                                     <th>Divisi</th>
                                     <th style="width:150px">Nilai Akhir</th>
+                                    <th style="width:150px">Aksi</th>
                                 </tr>
                             </thead>
 
@@ -125,7 +126,16 @@ foreach ($divisi_list as $d) {
                                             <td><?= htmlspecialchars($nama) ?></td>
                                             <td><?= htmlspecialchars($nip) ?></td>
                                             <td><?= htmlspecialchars($div_name) ?></td>
-                                            <td class="text-center"><b><?= $r['score'] ?></b></td>
+                                            <td class="text-center">
+                                                <b><?= number_format($r['score'] * 100, 2) ?></b>
+                                            </td>
+                                            <td>
+                                                <a href="<?= base_url('saw/detail_pegawai?id=' . $r['raw']['id_penilaian']) ?>"
+                                                    class="btn btn-info btn-sm">
+                                                    Detail SAW
+                                                </a>
+                                            </td>
+
                                         </tr>
                                     <?php endforeach; ?>
 

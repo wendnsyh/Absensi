@@ -243,7 +243,6 @@ class Saw extends CI_Controller
     }
 
 
-
     public function bobot()
     {
         $data['title'] = "Bobot Penilaian SAW";
@@ -253,7 +252,7 @@ class Saw extends CI_Controller
             'email' => $this->session->userdata('email')
         ])->row_array();
 
-        $data['bobot'] = $this->Saw_model->get_bobot();
+        $data['bobot'] = $this->Saw_model->get_bobot(); // simpan DESIMAL
 
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
@@ -264,28 +263,97 @@ class Saw extends CI_Controller
 
     public function update_bobot()
     {
-        $skill     = $this->input->post('skill');
-        $attitude  = $this->input->post('attitude');
-        $kehadiran = $this->input->post('kehadiran');
+        // INPUT DALAM PERSEN
+        $skill     = (float)$this->input->post('skill');
+        $attitude  = (float)$this->input->post('attitude');
+        $kehadiran = (float)$this->input->post('kehadiran');
 
-        if (($skill + $attitude + $kehadiran) != 1) {
+        $total = $skill + $attitude + $kehadiran;
+
+        if ($total != 100) {
             $this->session->set_flashdata(
                 'message',
-                '<div class="alert alert-danger">Jumlah total bobot wajib 1.0</div>'
+                '<div class="alert alert-danger">Total bobot wajib 100%</div>'
             );
             redirect('saw/bobot');
         }
 
+        // SIMPAN DALAM DESIMAL
         $this->Saw_model->update_bobot([
-            'skill'     => $skill,
-            'attitude'  => $attitude,
-            'kehadiran' => $kehadiran
+            'skills'     => $skill / 100,
+            'attitude'   => $attitude / 100,
+            'hari_kerja' => $kehadiran / 100
         ]);
 
         $this->session->set_flashdata(
             'message',
             '<div class="alert alert-success">Bobot berhasil diperbarui.</div>'
         );
+
         redirect('saw/bobot');
+    }
+
+    public function detail_pegawai()
+    {
+        $id_penilaian = $this->input->get('id');
+
+        if (!$id_penilaian) {
+            redirect('saw');
+        }
+
+        $data['title'] = "Detail Perhitungan SAW";
+        $this->set_weather_data($data);
+
+        $data['user'] = $this->db->get_where('user', [
+            'email' => $this->session->userdata('email')
+        ])->row_array();
+
+        $penilaian = $this->db
+            ->select("pk.*, p.nama_pegawai, p.nip, p.id_divisi, d.nama_divisi")
+            ->from("penilaian_karyawan pk")
+            ->join("pegawai p", "p.id_pegawai = pk.id_pegawai", "left")
+            ->join("divisi d", "d.id_divisi = p.id_divisi", "left")
+            ->where("pk.id_penilaian", $id_penilaian)
+            ->get()
+            ->row_array();
+
+        if (!$penilaian) {
+            redirect('saw');
+        }
+
+        // ambil semua penilaian di periode yg sama (UNTUK MAX)
+        $all = $this->Saw_model->get_penilaian(
+            $penilaian['periode_type'],
+            $penilaian['periode_key'],
+            $penilaian['id_divisi']
+        );
+
+        // max
+        $max_hari   = max(array_column($all, 'hari_kerja')) ?: 1;
+        $max_skill  = max(array_column($all, 'skills')) ?: 1;
+        $max_att    = max(array_column($all, 'attitude')) ?: 1;
+
+        // normalisasi
+        $penilaian['n_hari']  = $penilaian['hari_kerja'] / $max_hari;
+        $penilaian['n_skill'] = $penilaian['skills'] / $max_skill;
+        $penilaian['n_att']   = $penilaian['attitude'] / $max_att;
+
+        // bobot
+        $bobot = $this->Saw_model->get_bobot();
+
+        // nilai akhir
+        $penilaian['nilai_akhir'] =
+            ($penilaian['n_hari'] * $bobot['hari_kerja']) +
+            ($penilaian['n_skill'] * $bobot['skills']) +
+            ($penilaian['n_att'] * $bobot['attitude']);
+
+        $data['p'] = $penilaian;
+        $data['bobot'] = $bobot;
+
+        $this->load->view('template/header', $data);
+        $this->load->view('template/sidebar', $data);
+        $this->load->view('template/topbar', $data);
+        $this->load->view('saw/detail_pegawai', $data);
+        $this->load->view('template/footer');
     }
 }
