@@ -93,7 +93,7 @@
                                                     class="btn btn-info btn-sm">
                                                     <i class="fas fa-eye"></i> Detail
                                                 </a>
-                                                <a href="<?= base_url('absensi/edit_status/'
+                                                <a href="<?= base_url('Fingerprint/edit_kehadiran/'
                                                                 . $r['nip'] . '/'
                                                                 . $bulan . '/'
                                                                 . $tahun) ?>"
@@ -122,62 +122,6 @@
             </div>
 
 
-            <div class="modal fade" id="importHarianModal" tabindex="-1" role="dialog">
-                <div class="modal-dialog" role="document">
-                    <div class="modal-content">
-
-                        <form action="<?= base_url('absensi/import_harian') ?>"
-                            method="post" enctype="multipart/form-data">
-
-                            <div class="modal-header">
-                                <h5 class="modal-title">Import Absensi Harian</h5>
-                                <button type="button" class="close" data-dismiss="modal">
-                                    <span>&times;</span>
-                                </button>
-                            </div>
-
-                            <div class="modal-body">
-
-                                <input type="hidden" name="metode" value="1">
-
-                                <div class="form-group">
-                                    <label>Bulan</label>
-                                    <select name="bulan_impor" class="form-control" required>
-                                        <?php for ($i = 1; $i <= 12; $i++): ?>
-                                            <option value="<?= $i ?>"><?= date("F", mktime(0, 0, 0, $i, 1)) ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Tahun</label>
-                                    <select name="tahun_impor" class="form-control" required>
-                                        <?php for ($i = date('Y'); $i >= date('Y') - 5; $i--): ?>
-                                            <option value="<?= $i ?>"><?= $i ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>File Excel</label>
-                                    <input type="file" name="file" class="form-control" required>
-                                    <small class="text-danger">Gunakan template IN & OUT per pegawai.</small>
-                                </div>
-
-                            </div>
-
-                            <div class="modal-footer">
-                                <button class="btn btn-danger" data-dismiss="modal">Batal</button>
-                                <button class="btn btn-success" type="submit">Import</button>
-                            </div>
-
-                        </form>
-
-                    </div>
-                </div>
-            </div>
-
-
             <div class="modal fade" id="importFingerModal" tabindex="-1" role="dialog">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
@@ -194,37 +138,28 @@
 
                             <div class="modal-body">
 
-                                <input type="hidden" name="metode" value="2">
-
-                                <div class="form-group">
-                                    <label>Bulan</label>
-                                    <select name="bulan_impor" class="form-control" required>
-                                        <?php for ($i = 1; $i <= 12; $i++): ?>
-                                            <option value="<?= $i ?>"><?= date("F", mktime(0, 0, 0, $i, 1)) ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>Tahun</label>
-                                    <select name="tahun_impor" class="form-control" required>
-                                        <?php for ($i = date('Y'); $i >= date('Y') - 5; $i--): ?>
-                                            <option value="<?= $i ?>"><?= $i ?></option>
-                                        <?php endfor; ?>
-                                    </select>
+                                <div class="alert alert-info">
+                                    <b>Periode Otomatis</b><br>
+                                    Sistem akan membaca periode langsung dari file Excel.<br>
+                                    Contoh: <code>Periode: 01/10/2025 - 31/10/2025</code>
                                 </div>
 
                                 <div class="form-group">
                                     <label>File Fingerprint</label>
                                     <input type="file" name="file" class="form-control" required>
-                                    <small class="text-info">Gunakan format fingerprint timesheet (jam IN atas, OUT bawah).</small>
+                                    <small class="text-muted">
+                                        Format: Nama | Tanggal | Jam<br>
+                                        Jam paling awal = IN, paling akhir = OUT
+                                    </small>
                                 </div>
 
                             </div>
 
                             <div class="modal-footer">
                                 <button class="btn btn-danger" data-dismiss="modal">Batal</button>
-                                <button class="btn btn-primary" type="submit">Import</button>
+                                <button class="btn btn-primary" type="submit">
+                                    <i class="fas fa-upload"></i> Import
+                                </button>
                             </div>
 
                         </form>
