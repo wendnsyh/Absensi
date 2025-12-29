@@ -6,7 +6,11 @@
                 <h4 class="page-title">Edit Kehadiran</h4>
             </div>
 
-            <form method="post" action="<?= base_url('Fingerprint/simpan_kehadiran') ?>">
+            <!-- PENTING: enctype -->
+            <form method="post"
+                action="<?= base_url('Fingerprint/simpan_kehadiran') ?>"
+                enctype="multipart/form-data">
+
                 <input type="hidden" name="nip" value="<?= $pegawai->nip ?>">
                 <input type="hidden" name="bulan" value="<?= $bulan ?>">
                 <input type="hidden" name="tahun" value="<?= $tahun ?>">
@@ -27,49 +31,77 @@
                                         <th>Jam In</th>
                                         <th>Jam Out</th>
                                         <th>Status Kehadiran</th>
+                                        <th>Bukti Kehadiran</th>
                                     </tr>
                                 </thead>
                                 <tbody>
 
                                     <?php foreach ($rows as $i => $r): ?>
+                                        <?php $hasFinger = ($r['jam_in'] || $r['jam_out']); ?>
                                         <tr>
                                             <td>
                                                 <?= date('d M Y', strtotime($r['tanggal'])) ?>
                                                 <input type="hidden" name="tanggal[]" value="<?= $r['tanggal'] ?>">
                                             </td>
+
                                             <td><?= $r['hari'] ?></td>
                                             <td><?= $r['jam_in'] ?: '-' ?></td>
                                             <td><?= $r['jam_out'] ?: '-' ?></td>
-                                            <td>
-                                                <?php $hasFinger = ($r['jam_in'] || $r['jam_out']); ?>
 
-                                                <select name="keterangan[]" class="form-control"
+                                            <!-- STATUS -->
+                                            <td>
+                                                <select name="keterangan[]"
+                                                    class="form-control"
                                                     <?= $hasFinger ? 'disabled' : '' ?>>
 
                                                     <option value="">-- Pilih --</option>
-
-                                                    <?php foreach (
-                                                        [
-                                                            'Sakit',
-                                                            'Izin',
-                                                            'Cuti',
-                                                            'Alpa',
-                                                            'Dinas Luar',
-                                                            'WFH',
-                                                            'Libur'
-                                                        ] as $o
-                                                    ): ?>
-
+                                                    <?php foreach (['Sakit', 'Izin', 'Cuti', 'Alpa', 'Dinas Luar', 'WFH', 'Libur'] as $o): ?>
                                                         <option value="<?= $o ?>"
                                                             <?= ($r['keterangan'] == $o) ? 'selected' : '' ?>>
                                                             <?= $o ?>
                                                         </option>
-
                                                     <?php endforeach; ?>
                                                 </select>
 
                                                 <?php if ($hasFinger): ?>
-                                                    <small class="text-muted">Sudah ada Data fingerprint</small>
+                                                    <small class="text-muted">
+                                                        Sudah ada data fingerprint
+                                                    </small>
+                                                <?php endif; ?>
+                                            </td>
+
+                                            <!-- BUKTI -->
+                                            <td>
+                                                <?php if (!$hasFinger): ?>
+
+                                                    <?php if (!empty($r['bukti'])): ?>
+                                                        <?php
+                                                        $file = base_url('uploads/bukti_absensi/' . $r['bukti']);
+                                                        $ext  = strtolower(pathinfo($r['bukti'], PATHINFO_EXTENSION));
+                                                        ?>
+
+                                                        <?php if (in_array($ext, ['jpg', 'jpeg', 'png'])): ?>
+                                                            <a href="<?= $file ?>" target="_blank">
+                                                                <img src="<?= $file ?>"
+                                                                    style="max-height:50px;border-radius:4px">
+                                                            </a>
+                                                        <?php else: ?>
+                                                            <a href="<?= $file ?>" target="_blank"
+                                                                class="btn btn-sm btn-info">
+                                                                <i class="fas fa-file-pdf"></i> Lihat
+                                                            </a>
+                                                        <?php endif; ?>
+
+                                                        <hr class="my-1">
+                                                    <?php endif; ?>
+
+                                                    <input type="file"
+                                                        name="bukti[<?= $i ?>]"
+                                                        class="form-control"
+                                                        accept="image/*,.pdf">
+
+                                                <?php else: ?>
+                                                    <span class="text-muted">-</span>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>

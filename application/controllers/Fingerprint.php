@@ -215,58 +215,79 @@ class Fingerprint extends CI_Controller
 
     public function simpan_kehadiran()
     {
-        $post = $this->input->post();
-        $nip  = $post['nip'];
+        $post  = $this->input->post();
+        $nip   = $post['nip'];
         $bulan = $post['bulan'];
         $tahun = $post['tahun'];
 
         foreach ($post['tanggal'] as $i => $tanggal) {
 
-            $ket = trim($post['keterangan'][$i]);
+            $ket = isset($post['keterangan'][$i])
+                ? trim($post['keterangan'][$i])
+                : '';
 
-            // Ambil data existing
             $existing = $this->db->get_where('absensi_harian', [
                 'nip' => $nip,
                 'tanggal' => $tanggal
             ])->row();
 
-            /* =============================
-           1. JIKA ADA JAM FINGER → LEWATI
-        ============================== */
+            // 1. Skip jika sudah ada fingerprint
             if ($existing && ($existing->jam_in || $existing->jam_out)) {
                 continue;
             }
 
-            /* =============================
-           2. JIKA TIDAK PILIH APA-APA
-        ============================== */
+            // 2. Skip jika kosong
             if ($ket === '') {
                 continue;
             }
 
-            /* =============================
-           3. UPDATE JIKA SUDAH ADA
-        ============================== */
+            // 3. Default bukti (jangan hapus bukti lama)
+            // default bukti lama
+            $bukti = $existing->bukti ?? null;
+
+            // CEK FILE ADA & INDEX VALID
+            if (
+                isset($_FILES['bukti']) &&
+                isset($_FILES['bukti']['name']) &&
+                isset($_FILES['bukti']['name'][$i]) &&
+                $_FILES['bukti']['name'][$i] != ''
+            ) {
+
+                $_FILES['file']['name']     = $_FILES['bukti']['name'][$i];
+                $_FILES['file']['type']     = $_FILES['bukti']['type'][$i];
+                $_FILES['file']['tmp_name'] = $_FILES['bukti']['tmp_name'][$i];
+                $_FILES['file']['error']    = $_FILES['bukti']['error'][$i];
+                $_FILES['file']['size']     = $_FILES['bukti']['size'][$i];
+
+                $config['upload_path']   = './uploads/bukti_absensi/';
+                $config['allowed_types'] = 'jpg|jpeg|png|pdf';
+                $config['max_size']      = 2048;
+                $config['file_name']     = $nip . '_' . $tanggal . '_' . time();
+
+                $this->load->library('upload', $config);
+                $this->upload->initialize($config);
+
+                if ($this->upload->do_upload('file')) {
+                    $upload = $this->upload->data();
+                    $bukti = $upload['file_name'];
+                }
+            }
+
+
+            $data = [
+                'keterangan' => $ket,
+                'jam_in'     => null,
+                'jam_out'    => null,
+                'bukti'      => $bukti
+            ];
+
             if ($existing) {
-
-                $this->db->update('absensi_harian', [
-                    'keterangan' => $ket
-                ], [
-                    'id' => $existing->id
-                ]);
+                $this->db->update('absensi_harian', $data, ['id' => $existing->id]);
             } else {
-
-                /* =============================
-               4. INSERT BARU (HARI KOSONG)
-            ============================== */
-                $this->db->insert('absensi_harian', [
-                    'nip' => $nip,
-                    'tanggal' => $tanggal,
-                    'hari' => date('l', strtotime($tanggal)),
-                    'keterangan' => $ket,
-                    'jam_in' => null,
-                    'jam_out' => null
-                ]);
+                $data['nip']     = $nip;
+                $data['tanggal'] = $tanggal;
+                $data['hari']    = date('l', strtotime($tanggal));
+                $this->db->insert('absensi_harian', $data);
             }
         }
 
