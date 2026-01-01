@@ -670,7 +670,9 @@ class Absensi extends CI_Controller
                     'jam_out' => '-',
                     'kategori_telat' => 'Libur',
                     'menit_telat' => 0,
-                    'status_pulang' => '-'
+                    'status_pulang' => '-',
+                    'keterangan' => 'Libur ',
+                    'bukti' => null
                 ];
 
                 continue; // ⛔ STOP TOTAL, jangan cek logika lain
@@ -695,7 +697,9 @@ class Absensi extends CI_Controller
                     'jam_out' => $jam_out,
                     'kategori_telat' => $kategori,
                     'menit_telat' => 0,
-                    'status_pulang' => $status_pulang
+                    'status_pulang' => $status_pulang,
+                    'keterangan' => $ket_db,
+                    'bukti' => $row['bukti'] ?? null
                 ];
 
                 continue;
@@ -727,7 +731,9 @@ class Absensi extends CI_Controller
                     'jam_out' => '-',
                     'kategori_telat' => $kategori,
                     'menit_telat' => 0,
-                    'status_pulang' => '-'
+                    'status_pulang' => '-',
+                    'keterangan' => $ket_db,
+                    'bukti' => $row['bukti'] ?? null
                 ];
 
                 continue;
@@ -784,7 +790,9 @@ class Absensi extends CI_Controller
                 'jam_out' => $jam_out,
                 'kategori_telat' => $kategori,
                 'menit_telat' => $menit_telat,
-                'status_pulang' => $status_pulang
+                'status_pulang' => $status_pulang,
+                'keterangan' => $ket_db,
+                'bukti' => $row['bukti'] ?? null
             ];
         }
 

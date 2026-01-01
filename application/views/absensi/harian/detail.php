@@ -101,22 +101,29 @@
                                     <th>Hari</th>
                                     <th>Jam In</th>
                                     <th>Jam Out</th>
-                                    <th>Kategori Keterlambatan</th>
-                                    <th>Menit Terlambat</th>
+                                    <th>Kategori</th>
+                                    <th>Menit Telat</th>
                                     <th>Status Pulang</th>
+                                    <th>Bukti</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php if (empty($absensi)): ?>
                                     <tr>
-                                        <td colspan="7" class="text-center">Tidak ada data absensi untuk periode ini.</td>
+                                        <td colspan="9" class="text-center">Tidak ada data.</td>
                                     </tr>
                                 <?php else: $no = 1; ?>
                                     <?php foreach ($absensi as $a): ?>
+
                                         <?php
-                                        // Warna badge berdasarkan kategori
+                                        // AMAN DARI ERROR
+                                        $keterangan = $a['keterangan'] ?? '';
+                                        $bukti      = $a['bukti'] ?? null;
+                                        $hasBukti   = !empty($bukti);
+                                        $isLibur    = ($a['kategori_telat'] ?? '') === 'Libur';
+
                                         $badge = 'secondary';
-                                        switch ($a['kategori_telat']) {
+                                        switch ($a['kategori_telat'] ?? '') {
                                             case 'Tepat Waktu':
                                                 $badge = 'success';
                                                 break;
@@ -129,27 +136,48 @@
                                             case 'Telat > 90 Menit':
                                                 $badge = 'dark';
                                                 break;
-                                            case 'Tidak Finger':
-                                                $badge = 'secondary';
-                                                break;
                                             case 'Libur':
                                                 $badge = 'info';
                                                 break;
                                         }
-
-                                        // Gaya baris libur
-                                        $row_style = ($a['kategori_telat'] == 'Libur') ? 'background-color: #f0f0f0; font-style: italic;' : '';
                                         ?>
-                                        <tr style="<?= $row_style ?>">
+
+                                        <tr <?= $isLibur ? 'style="background:#f5f5f5;font-style:italic"' : '' ?>>
                                             <td><?= $no++ ?></td>
                                             <td><?= date('d M Y', strtotime($a['tanggal'])) ?></td>
-                                            <td><?= $a['hari'] ?: '-' ?></td>
-                                            <td><?= $a['jam_in'] ?: '-' ?></td>
-                                            <td><?= $a['jam_out'] ?: '-' ?></td>
-                                            <td><span class="badge badge-<?= $badge ?>"><?= $a['kategori_telat'] ?></span></td>
-                                            <td><?= $a['menit_telat'] ?> menit</td>
-                                            <td><?= $a['status_pulang'] ?></td>
+                                            <td><?= $a['hari'] ?? '-' ?></td>
+                                            <td><?= $a['jam_in'] ?? '-' ?></td>
+                                            <td><?= $a['jam_out'] ?? '-' ?></td>
+
+                                            <td>
+                                                <span class="badge badge-<?= $badge ?>">
+                                                    <?= $a['kategori_telat'] ?? '-' ?>
+                                                </span>
+                                            </td>
+
+                                            <td><?= $a['menit_telat'] ?? 0 ?> menit</td>
+
+                                            <!-- STATUS PULANG -->
+                                            <td>
+                                                <?php if (in_array($keterangan, ['Sakit', 'Izin', 'Cuti', 'Dinas Luar']) && $hasBukti): ?>
+                                                    <span class="badge badge-info">Lihat Bukti</span>
+                                                <?php else: ?>
+                                                    <?= $a['status_pulang'] ?? '-' ?>
+                                                <?php endif; ?>
+                                            </td>
+
+                                            <td class="text-center">
+                                                <?php if (!empty($a['bukti'])): ?>
+                                                    <img src="<?= base_url($a['bukti']) ?>"
+                                                        alt="Bukti Kehadiran"
+                                                        style="max-width:80px; max-height:80px; cursor:pointer; border-radius:6px"
+                                                        onclick="window.open('<?= base_url($a['bukti']) ?>','_blank')">
+                                                <?php else: ?>
+                                                    -
+                                                <?php endif; ?>
+                                            </td>
                                         </tr>
+
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </tbody>

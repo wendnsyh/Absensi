@@ -22,7 +22,7 @@ class AbsensiHarian_model extends CI_Model
     public function get_by_nip_bulan_tahun($nip, $bulan, $tahun)
     {
         return $this->db
-            ->select('nip, nama, tanggal, hari, jam_in, jam_out, keterangan')
+            ->select('absensi_harian.*')
             ->from($this->table)
             ->where('nip', $nip)
             ->where('MONTH(tanggal)', $bulan)

@@ -6,11 +6,9 @@
                 <h4 class="page-title">Edit Kehadiran</h4>
             </div>
 
-            <!-- PENTING: enctype -->
             <form method="post"
                 action="<?= base_url('Fingerprint/simpan_kehadiran') ?>"
                 enctype="multipart/form-data">
-
                 <input type="hidden" name="nip" value="<?= $pegawai->nip ?>">
                 <input type="hidden" name="bulan" value="<?= $bulan ?>">
                 <input type="hidden" name="tahun" value="<?= $tahun ?>">
@@ -26,87 +24,80 @@
                             <table class="table table-bordered table-hover">
                                 <thead class="thead-dark">
                                     <tr>
-                                        <th>Tanggal</th>
-                                        <th>Hari</th>
-                                        <th>Jam In</th>
-                                        <th>Jam Out</th>
+                                        <th style="width:120px">Tanggal</th>
+                                        <th style="width:110px">Hari</th>
+                                        <th style="width:90px">Jam In</th>
+                                        <th style="width:90px">Jam Out</th>
                                         <th>Status Kehadiran</th>
-                                        <th>Bukti Kehadiran</th>
+                                        <th style="width:220px">Bukti</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-
                                     <?php foreach ($rows as $i => $r): ?>
-                                        <?php $hasFinger = ($r['jam_in'] || $r['jam_out']); ?>
+                                        <?php
+                                        $hasFinger = ($r['jam_in'] || $r['jam_out']);
+                                        $ket = $r['keterangan'] ?? '';
+                                        ?>
                                         <tr>
                                             <td>
                                                 <?= date('d M Y', strtotime($r['tanggal'])) ?>
                                                 <input type="hidden" name="tanggal[]" value="<?= $r['tanggal'] ?>">
                                             </td>
-
                                             <td><?= $r['hari'] ?></td>
                                             <td><?= $r['jam_in'] ?: '-' ?></td>
                                             <td><?= $r['jam_out'] ?: '-' ?></td>
 
                                             <!-- STATUS -->
                                             <td>
-                                                <select name="keterangan[]"
-                                                    class="form-control"
-                                                    <?= $hasFinger ? 'disabled' : '' ?>>
-
-                                                    <option value="">-- Pilih --</option>
-                                                    <?php foreach (['Sakit', 'Izin', 'Cuti', 'Alpa', 'Dinas Luar', 'WFH', 'Libur'] as $o): ?>
-                                                        <option value="<?= $o ?>"
-                                                            <?= ($r['keterangan'] == $o) ? 'selected' : '' ?>>
-                                                            <?= $o ?>
-                                                        </option>
-                                                    <?php endforeach; ?>
-                                                </select>
-
                                                 <?php if ($hasFinger): ?>
-                                                    <small class="text-muted">
-                                                        Sudah ada data fingerprint
-                                                    </small>
+
+                                                    <!-- 🔒 NILAI TETAP TERKIRIM -->
+                                                    <input type="hidden" name="keterangan[]" value="<?= $ket ?>">
+
+                                                    <!-- 🔒 SELECT HANYA TAMPILAN -->
+                                                    <select class="form-control" disabled>
+                                                        <option><?= $ket ?: 'Hadir' ?></option>
+                                                    </select>
+
+                                                    <small class="text-muted">Sudah ada data fingerprint</small>
+
+                                                <?php else: ?>
+
+                                                    <select name="keterangan[]"
+                                                        class="form-control"
+                                                        data-index="<?= $i ?>"
+                                                        onchange="toggleBukti(this)">
+
+                                                        <option value="">-- Pilih --</option>
+                                                        <?php foreach (['Sakit', 'Izin', 'Cuti', 'Alpa', 'Dinas Luar', 'WFH', 'Libur'] as $o): ?>
+                                                            <option value="<?= $o ?>" <?= ($ket == $o) ? 'selected' : '' ?>>
+                                                                <?= $o ?>
+                                                            </option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+
                                                 <?php endif; ?>
                                             </td>
 
                                             <!-- BUKTI -->
                                             <td>
                                                 <?php if (!$hasFinger): ?>
-
-                                                    <?php if (!empty($r['bukti'])): ?>
-                                                        <?php
-                                                        $file = base_url('uploads/bukti_absensi/' . $r['bukti']);
-                                                        $ext  = strtolower(pathinfo($r['bukti'], PATHINFO_EXTENSION));
-                                                        ?>
-
-                                                        <?php if (in_array($ext, ['jpg', 'jpeg', 'png'])): ?>
-                                                            <a href="<?= $file ?>" target="_blank">
-                                                                <img src="<?= $file ?>"
-                                                                    style="max-height:50px;border-radius:4px">
-                                                            </a>
-                                                        <?php else: ?>
-                                                            <a href="<?= $file ?>" target="_blank"
-                                                                class="btn btn-sm btn-info">
-                                                                <i class="fas fa-file-pdf"></i> Lihat
-                                                            </a>
-                                                        <?php endif; ?>
-
-                                                        <hr class="my-1">
-                                                    <?php endif; ?>
-
                                                     <input type="file"
                                                         name="bukti[<?= $i ?>]"
+                                                        id="bukti_<?= $i ?>"
                                                         class="form-control"
-                                                        accept="image/*,.pdf">
+                                                        accept="image/*,.pdf"
+                                                        <?= ($ket === 'Libur') ? 'disabled' : '' ?>>
 
+                                                    <?php if (!empty($r['bukti'])): ?>
+                                                        <small class="text-success">File sebelumnya ada</small>
+                                                    <?php endif; ?>
                                                 <?php else: ?>
-                                                    <span class="text-muted">-</span>
+                                                    <small class="text-muted">-</small>
                                                 <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
-
                                 </tbody>
                             </table>
                         </div>
@@ -128,3 +119,18 @@
         </div>
     </div>
 </div>
+
+<script>
+    function toggleBukti(select) {
+        const idx = select.dataset.index;
+        const file = document.getElementById('bukti_' + idx);
+        if (!file) return;
+
+        if (select.value === 'Libur') {
+            file.value = '';
+            file.disabled = true;
+        } else {
+            file.disabled = false;
+        }
+    }
+</script>
