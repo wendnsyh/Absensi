@@ -184,6 +184,12 @@ class Saw extends CI_Controller
         $periode_type = $this->input->get('periode_type');
         $periode_key  = $this->input->get('periode_key');
         $divisi       = $this->input->get('divisi');
+        $data['divisi_list'] = array_map(function ($d) {
+            return [
+                'id_divisi' => $d->id_divisi,
+                'nama_divisi' => $d->nama_divisi
+            ];
+        }, $this->Divisi_model->get_all());
 
         $data['periode_type'] = $periode_type;
         $data['periode_key']  = $periode_key;
@@ -196,10 +202,9 @@ class Saw extends CI_Controller
             $data['pegawai_list'] = [];
             $data['existing_penilaian'] = [];
         }
-
         $this->load->view('template/header', $data);
-        $this->load->view('template/sidebar', $data);
         $this->load->view('template/topbar', $data);
+        $this->load->view('template/sidebar', $data);
         $this->load->view('saw/penilaian', $data);
         $this->load->view('template/footer');
     }
