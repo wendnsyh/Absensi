@@ -7,7 +7,8 @@ class LaporanAbsensi extends CI_Controller
     {
         parent::__construct();
         $this->load->model('LaporanAbsensi_model');
-        //$this->load->library('Pdf');
+        $this->load->model('Pegawai_model');
+        $this->load->model('AbsensiHarian_model');
     }
     private function set_weather_data(&$data)
     {
@@ -52,34 +53,25 @@ class LaporanAbsensi extends CI_Controller
 
     public function index()
     {
-        $periode_type = $this->input->get('periode_type');
-        $periode_key  = $this->input->get('periode_key');
-        $divisi_id    = $this->input->get('divisi_id');
+        $bulan     = (int) ($this->input->get('bulan') ?? date('n'));
+        $tahun     = (int) ($this->input->get('tahun') ?? date('Y'));
+        $divisi_id = $this->input->get('divisi_id');
 
         $data = [
-            'title'        => 'Laporan Absensi',
-            'periode_type' => $periode_type,
-            'periode_key'  => $periode_key,
-            'periode_list' => $this->_getPeriodeList(),
-            'divisi'       => $this->db->get('divisi')->result(),
-            'divisi_id'    => $divisi_id,
-            'laporan'      => []
+            'title'     => 'Laporan Absensi',
+            'bulan'     => $bulan,
+            'tahun'     => $tahun,
+            'divisi_id' => $divisi_id,
+            'divisi'    => $this->db->get('divisi')->result(),
+            'laporan'   => $this->LaporanAbsensi_model
+                ->get_index($bulan, $tahun, $divisi_id),
         ];
-
-        if ($periode_type && $periode_key) {
-            $range = $this->_getRangeTanggal($periode_type, $periode_key);
-
-            $data['laporan'] = $this->LaporanAbsensi_model
-                ->get_laporan($range['start'], $range['end'], $divisi_id);
-
-            $data['range'] = $range;
-        }
 
         $this->set_weather_data($data);
         $data['user'] = $this->db->get_where('user', [
             'email' => $this->session->userdata('email')
         ])->row_array();
-        $data['title'] = 'Laporan Absensi';
+
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);
         $this->load->view('template/sidebar', $data);
@@ -88,58 +80,130 @@ class LaporanAbsensi extends CI_Controller
     }
 
 
-    public function export_pdf()
+    public function detail($nip)
     {
-        $periode_type = $this->input->get('periode_type');
-        $periode_key  = $this->input->get('periode_key');
-        $divisi_id    = $this->input->get('divisi_id');
+        $bulan = $this->input->get('bulan');
+        $tahun = $this->input->get('tahun');
 
-        $range = $this->_getRangeTanggal($periode_type, $periode_key);
+        if (!$bulan || !$tahun) {
+            redirect('laporanabsensi');
+        }
 
-        $data['laporan'] = $this->LaporanAbsensi_model
-            ->get_laporan_pdf($range['start'], $range['end'], $divisi_id);
+        $this->load->model([
+            'Pegawai_model',
+            'LaporanAbsensi_model'
+        ]);
 
-        $data['periode'] = $periode_key;
+        $pegawai = $this->Pegawai_model->get_by_nip($nip);
+        if (!$pegawai) show_404();
 
-        $pdf = new Pdf('L', 'mm', 'A4');
-        $pdf->SetTitle('Laporan Absensi');
-        $pdf->SetMargins(10, 10, 10);
+        $rows = $this->LaporanAbsensi_model->get_detail($nip, $bulan, $tahun);
+
+        $detail = [];
+
+        foreach ($rows as $r) {
+
+            // =====================
+            // KATEGORI (READ RESULT)
+            // =====================
+            if ($r->keterangan && $r->keterangan !== 'HADIR') {
+                $kategori = $r->keterangan;
+            } elseif (!$r->jam_in || !$r->jam_out) {
+                $kategori = 'Tidak Finger';
+            } elseif ($r->menit_telat > 90) {
+                $kategori = 'Telat > 90 Menit';
+            } elseif ($r->menit_telat >= 30) {
+                $kategori = 'Telat 30–90 Menit';
+            } elseif ($r->menit_telat > 0) {
+                $kategori = 'Telat < 30 Menit';
+            } else {
+                $kategori = 'Tepat Waktu';
+            }
+
+            // =====================
+            // STATUS PULANG
+            // =====================
+            $hariNum = date('N', strtotime($r->tanggal));
+            $jamPulang = ($hariNum == 5) ? '16:30:00' : '16:00:00';
+
+            if (!$r->jam_out) {
+                $status = 'Tidak Lengkap';
+            } elseif ($r->jam_out > $jamPulang) {
+                $status = 'Menambah Jam Kerja';
+            } else {
+                $status = 'Pulang Normal';
+            }
+
+            $detail[] = [
+                'tanggal' => $r->tanggal,
+                'hari' => $r->hari,
+                'jam_in' => $r->jam_in,
+                'jam_out' => $r->jam_out,
+                'kategori' => $kategori,
+                'status_pulang' => $status,
+                'bukti' => $r->bukti
+            ];
+        }
+
+        $data = [
+            'title'   => 'Detail Laporan Absensi',
+            'pegawai' => $pegawai,
+            'detail'  => $detail,
+            'bulan'   => $bulan,
+            'tahun'   => $tahun
+        ];
+
+        $this->set_weather_data($data);
+        $data['user'] = $this->db->get_where('user', [
+            'email' => $this->session->userdata('email')
+        ])->row_array();
+
+        $this->load->view('template/header', $data);
+        $this->load->view('template/topbar', $data);
+        $this->load->view('template/sidebar', $data);
+        $this->load->view('laporan/detail', $data);
+        $this->load->view('template/footer');
+    }
+
+
+    public function export_pdf_detail($nip)
+    {
+        $bulan = $this->input->get('bulan');
+        $tahun = $this->input->get('tahun');
+
+        if (!$bulan || !$tahun) {
+            redirect('laporanabsensi');
+        }
+
+        $pegawai = $this->db->get_where('pegawai', ['nip' => $nip])->row();
+        $detail  = $this->LaporanAbsensi_model
+            ->get_detail($nip, $bulan, $tahun);
+
+        $data['pegawai'] = $pegawai;
+        $data['detail']  = $detail;
+        $data['bulan']   = $bulan;
+        $data['tahun']   = $tahun;
+
+        // ===== TCPDF =====
+        $this->load->library('pdf');
+        $pdf = new Pdf('P', 'mm', 'A4');
         $pdf->AddPage();
 
-        $html = $this->load->view('laporan/pdf_absensi', $data, true);
-        $pdf->writeHTML($html);
+        $html = $this->load->view('laporan/pdf_detail', $data, true);
+        $pdf->writeHTML($html, true, false, true, false, '');
 
-        $pdf->Output('laporan-absensi.pdf', 'I');
+        $pdf->Output(
+            "Detail-Absensi-{$nip}-{$bulan}-{$tahun}.pdf",
+            'I'
+        );
     }
 
-    // ================= HELPER =================
-    private function _getPeriodeList()
-    {
-        $year = date('Y');
-        return [
-            'monthly' => array_map(fn($m) => [
-                'key' => "$year-$m",
-                'label' => date('F Y', strtotime("$year-$m-01"))
-            ], range(1, 12)),
 
-            'quarter' => [
-                ['key' => "$year-Q1", 'label' => "Triwulan I $year"],
-                ['key' => "$year-Q2", 'label' => "Triwulan II $year"],
-                ['key' => "$year-Q3", 'label' => "Triwulan III $year"],
-                ['key' => "$year-Q4", 'label' => "Triwulan IV $year"],
-            ],
 
-            'semester' => [
-                ['key' => "$year-S1", 'label' => "Semester I $year"],
-                ['key' => "$year-S2", 'label' => "Semester II $year"],
-            ],
 
-            'yearly' => [
-                ['key' => "$year", 'label' => "Tahun $year"]
-            ]
-        ];
-    }
-
+    /* =========================
+       HELPER RANGE PERIODE
+    ========================= */
     private function _getRangeTanggal($type, $key)
     {
         switch ($type) {
@@ -148,26 +212,23 @@ class LaporanAbsensi extends CI_Controller
                     'start' => "$key-01",
                     'end'   => date('Y-m-t', strtotime("$key-01"))
                 ];
-
             case 'quarter':
-                [$y, $q] = explode('-', $key);
+                [$y, $q] = explode('-Q', $key);
                 $map = [
-                    'Q1' => ['01-01', '03-31'],
-                    'Q2' => ['04-01', '06-30'],
-                    'Q3' => ['07-01', '09-30'],
-                    'Q4' => ['10-01', '12-31']
+                    1 => ['01-01', '03-31'],
+                    2 => ['04-01', '06-30'],
+                    3 => ['07-01', '09-30'],
+                    4 => ['10-01', '12-31']
                 ];
                 return [
                     'start' => "$y-{$map[$q][0]}",
                     'end'   => "$y-{$map[$q][1]}"
                 ];
-
             case 'semester':
-                [$y, $s] = explode('-', $key);
-                return $s == 'S1'
+                [$y, $s] = explode('-S', $key);
+                return $s == 1
                     ? ['start' => "$y-01-01", 'end' => "$y-06-30"]
                     : ['start' => "$y-07-01", 'end' => "$y-12-31"];
-
             case 'yearly':
                 return [
                     'start' => "$key-01-01",

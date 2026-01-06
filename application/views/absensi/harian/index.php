@@ -86,28 +86,31 @@
                                             <td><?= $r['nip'] ?></td>
                                             <td><?= $r['nama_pegawai'] ?></td>
                                             <td>
-                                                <a href="<?= base_url('absensi/detail_harian/'
-                                                                . $r['nip'] . '/'
-                                                                . $bulan . '/'
-                                                                . $tahun) ?>"
+                                                <a href="<?= base_url(
+                                                                'absensi/detail_harian/' . $r['nip']
+                                                                    . '?periode_type=' . $periode_type
+                                                                    . '&periode_key=' . $periode_key
+                                                                    . '&divisi_id=' . $divisi_id
+                                                            ) ?>"
                                                     class="btn btn-info btn-sm">
                                                     <i class="fas fa-eye"></i> Detail
                                                 </a>
-                                                <a href="<?= base_url('Fingerprint/edit_kehadiran/'
-                                                                . $r['nip'] . '/'
-                                                                . $bulan . '/'
-                                                                . $tahun) ?>"
-                                                    class="btn btn-info btn-sm">
-                                                    <i class="fas fa-eye"></i> Edit
+                                                <a href="<?= base_url(
+                                                                'fingerprint/edit_kehadiran/' . $r['nip']
+                                                                    . '?periode_type=' . $periode_type
+                                                                    . '&periode_key=' . $periode_key
+                                                            ) ?>"
+                                                    class="btn btn-warning btn-sm">
+                                                    <i class="fas fa-edit"></i> Edit
                                                 </a>
-                                                <a href="<?= base_url('absensi/hapus_rekap/'
-                                                                . $r['nip'] . '/'
-                                                                . $bulan . '/'
-                                                                . $tahun) ?>"
+                                                <a href="<?= base_url(
+                                                                'absensi/hapus_rekap/' . $r['nip']
+                                                                    . '?periode_type=' . $periode_type
+                                                                    . '&periode_key=' . $periode_key
+                                                            ) ?>"
                                                     class="btn btn-danger btn-sm"
-                                                    onclick="return confirm('Yakin ingin menghapus semua absensi pegawai ini pada bulan ini?')">
-                                                    <i class="fas fa-trash"></i> Hapus
-                                                </a>
+                                                    onclick="return confirm('Yakin ingin menghapus semua absensi pegawai pada periode ini?')">
+
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

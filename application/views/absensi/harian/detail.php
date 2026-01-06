@@ -1,6 +1,8 @@
 <div class="main-panel">
     <div class="content">
         <div class="page-inner">
+
+            <!-- PAGE HEADER -->
             <div class="page-header">
                 <h4 class="page-title">Detail Absensi Harian</h4>
                 <ul class="breadcrumbs">
@@ -17,15 +19,19 @@
                     </li>
                 </ul>
             </div>
+
+            <!-- CARD -->
             <div class="card">
+
+                <!-- CARD HEADER -->
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <div>
                         <h5>
                             Data Pegawai:
-                            <strong><?= $pegawai ? htmlspecialchars($pegawai->nama_pegawai) : '-' ?></strong>
+                            <strong><?= htmlspecialchars($pegawai->nama_pegawai ?? '-') ?></strong>
                         </h5>
-                        <small>
-                            NIP: <?= $pegawai ? htmlspecialchars($pegawai->nip) : '-' ?>
+                        <small class="text-muted">
+                            NIP: <?= htmlspecialchars($pegawai->nip ?? '-') ?>
                             —
                             Periode: <?= date('F Y', strtotime("$tahun-$bulan-01")) ?>
                         </small>
@@ -37,19 +43,22 @@
                         </a>
                     </div>
                 </div>
+
+                <!-- CARD BODY -->
                 <div class="card-body">
+
+                    <!-- SUMMARY -->
                     <div class="row mb-4">
+
                         <div class="col-6 col-md-3">
                             <div class="card card-stats card-primary">
                                 <div class="card-body">
                                     <div class="numbers">
                                         <p class="card-category">Total Kehadiran</p>
                                         <h4 class="card-title">
-                                            <?= $summary['total_hadir'] ?> Hari
+                                            <?= $summary['total_hadir'] ?? 0 ?> Hari
                                         </h4>
-                                        <small class="text-white">
-                                            Disiplin Kehadiran
-                                        </small>
+                                        <small class="text-white">Disiplin Kehadiran</small>
                                     </div>
                                     <div class="icon-big text-center">
                                         <i class="flaticon-check"></i>
@@ -57,17 +66,18 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-6 col-md-3">
                             <div class="card card-stats card-warning">
                                 <div class="card-body">
                                     <div class="numbers">
                                         <p class="card-category">Total Keterlambatan</p>
                                         <h4 class="card-title">
-                                            <?= $summary['total_menit_telat'] ?> Menit
+                                            <?= $summary['total_menit_telat'] ?? 0 ?> Menit
                                         </h4>
                                         <small class="text-white">
-                                            ≈ <?= $summary['konversi_telat']['jam'] ?> Jam
-                                            <?= $summary['konversi_telat']['menit'] ?> Menit
+                                            ≈ <?= $summary['konversi_telat']['jam'] ?? 0 ?> Jam
+                                            <?= $summary['konversi_telat']['menit'] ?? 0 ?> Menit
                                         </small>
                                     </div>
                                     <div class="icon-big text-center">
@@ -76,6 +86,7 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-6 col-md-3">
                             <div class="card card-stats card-danger">
                                 <div class="card-body">
@@ -84,9 +95,7 @@
                                         <h4 class="card-title">
                                             Rp <?= number_format($summary['total_denda'] ?? 0, 0, ',', '.') ?>
                                         </h4>
-                                        <small class="text-white">
-                                            Akibat Keterlambatan
-                                        </small>
+                                        <small class="text-white">Akibat Keterlambatan</small>
                                     </div>
                                     <div class="icon-big text-center">
                                         <i class="flaticon-price-tag"></i>
@@ -94,17 +103,16 @@
                                 </div>
                             </div>
                         </div>
+
                         <div class="col-6 col-md-3">
                             <div class="card card-stats card-danger">
                                 <div class="card-body">
                                     <div class="numbers">
                                         <p class="card-category">Pelanggaran Absensi</p>
                                         <h4 class="card-title">
-                                            <?= $summary['total_tidak_finger'] ?> Kali
+                                            <?= $summary['total_tidak_finger'] ?? 0 ?> Kali
                                         </h4>
-                                        <small class="text-white">
-                                            Tidak Finger
-                                        </small>
+                                        <small class="text-white">Tidak Finger</small>
                                     </div>
                                     <div class="icon-big text-center">
                                         <i class="flaticon-error"></i>
@@ -115,6 +123,7 @@
 
                     </div>
 
+                    <!-- TABLE -->
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
                             <thead class="thead-dark">
@@ -131,44 +140,38 @@
                                 </tr>
                             </thead>
                             <tbody>
+
                                 <?php if (empty($absensi)) : ?>
                                     <tr>
-                                        <td colspan="10" class="text-center">Tidak ada data.</td>
+                                        <td colspan="9" class="text-center">Tidak ada data.</td>
                                     </tr>
-                                <?php else : $no = 1; ?>
-                                    <?php foreach ($absensi as $a) : ?>
+                                    <?php else : $no = 1;
+                                    foreach ($absensi as $a) : ?>
 
                                         <?php
-                                        $keterangan = $a['keterangan'] ?? '';
-                                        $bukti      = $a['bukti'] ?? null;
-                                        $hasBukti   = !empty($bukti);
-                                        $isLibur    = ($a['kategori_telat'] ?? '') === 'Libur';
-
+                                        $kategori = $a['kategori_telat'] ?? '-';
                                         $badge = 'secondary';
 
-                                        switch ($a['kategori_telat'] ?? '') {
+                                        switch ($kategori) {
                                             case 'Tepat Waktu':
                                                 $badge = 'success';
                                                 break;
-
                                             case 'Telat < 30 Menit':
                                                 $badge = 'warning';
                                                 break;
-
                                             case 'Telat 30–90 Menit':
                                                 $badge = 'danger';
                                                 break;
-
                                             case 'Telat > 90 Menit':
                                                 $badge = 'dark';
                                                 break;
-
                                             case 'Libur':
                                                 $badge = 'info';
                                                 break;
                                         }
                                         ?>
-                                        <tr <?= $isLibur ? 'style="background:#f5f5f5;font-style:italic"' : '' ?>>
+
+                                        <tr>
                                             <td><?= $no++ ?></td>
                                             <td><?= date('d M Y', strtotime($a['tanggal'])) ?></td>
                                             <td><?= $a['hari'] ?? '-' ?></td>
@@ -176,40 +179,19 @@
                                             <td><?= $a['jam_out'] ?? '-' ?></td>
                                             <td>
                                                 <span class="badge badge-<?= $badge ?>">
-                                                    <?= $a['kategori_telat'] ?? '-' ?>
+                                                    <?= $kategori ?>
                                                 </span>
                                             </td>
                                             <td>
-                                                <?php
-                                                // Default badge
-                                                $status = $a['status_pulang'] ?? '-';
-                                                $badgeStatus = 'secondary';
-
-                                                // Keterangan khusus → selalu "-"
-                                                if (in_array($keterangan, ['Sakit', 'Izin', 'Cuti', 'Dinas Luar', 'WFH'])) {
-                                                    $status = '-';
-                                                    $badgeStatus = 'secondary';
-                                                } elseif ($status === 'Lembur') {
-                                                    $badgeStatus = 'success';
-                                                } elseif ($status === 'Terlambat Tidak Menambah Jam Kerja') {
-                                                    $badgeStatus = 'warning';
-                                                } elseif ($status === 'Pulang Normal') {
-                                                    $badgeStatus = 'info';
-                                                } elseif ($status === 'Tidak Lengkap') {
-                                                    $badgeStatus = 'danger';
-                                                }
-                                                ?>
-
-                                                <span class="badge badge-<?= $badgeStatus ?>">
-                                                    <?= $status ?>
+                                                <span class="badge badge-secondary">
+                                                    <?= $a['status_pulang'] ?? '-' ?>
                                                 </span>
                                             </td>
-
                                             <td class="text-center">
-                                                <?php if ($hasBukti) : ?>
-                                                    <img src="<?= base_url($bukti) ?>"
-                                                        style="max-width:80px;max-height:80px;border-radius:6px;cursor:pointer"
-                                                        onclick="window.open('<?= base_url($bukti) ?>','_blank')">
+                                                <?php if (!empty($a['bukti'])) : ?>
+                                                    <img src="<?= base_url($a['bukti']) ?>"
+                                                        style="max-width:80px;border-radius:6px;cursor:pointer"
+                                                        onclick="window.open('<?= base_url($a['bukti']) ?>','_blank')">
                                                 <?php else : ?>
                                                     -
                                                 <?php endif; ?>
@@ -220,15 +202,15 @@
                                                         Rp <?= number_format($a['nominal_denda'], 0, ',', '.') ?>
                                                     </span>
                                                     <br>
-                                                    <small class="text-muted"><?= $a['jenis_denda'] ?></small>
+                                                    <small class="text-muted"><?= $a['jenis_denda'] ?? '' ?></small>
                                                 <?php else : ?>
                                                     -
                                                 <?php endif; ?>
                                             </td>
                                         </tr>
 
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                <?php endforeach;
+                                endif; ?>
 
                             </tbody>
                         </table>
@@ -236,6 +218,8 @@
 
                 </div>
             </div>
+
         </div>
     </div>
 </div>
+ 

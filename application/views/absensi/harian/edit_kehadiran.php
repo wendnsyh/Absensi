@@ -104,7 +104,7 @@
                     </div>
 
                     <div class="card-footer text-right">
-                        <a href="<?= base_url("absensi/detail_harian/{$pegawai->nip}/$bulan/$tahun") ?>"
+                        <a href="<?= base_url("absensi/detail_harian/{$pegawai->nip}?periode_key={$tahun}-{$bulan}") ?>"
                             class="btn btn-secondary">
                             Kembali
                         </a>

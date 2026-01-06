@@ -74,6 +74,45 @@ class Absensi extends CI_Controller
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
     }
 
+    private function getPeriodeRange($periode_type, $periode_key)
+    {
+        switch ($periode_type) {
+            case 'monthly':
+                $start = $periode_key . '-01';
+                $end   = date('Y-m-t', strtotime($start));
+                $label = date('F Y', strtotime($start));
+                break;
+
+            case 'quarter':
+                [$y, $q] = explode('-Q', $periode_key);
+                $month = ($q - 1) * 3 + 1;
+                $start = "$y-$month-01";
+                $end   = date('Y-m-t', strtotime("+2 months", strtotime($start)));
+                $label = "Triwulan $q $y";
+                break;
+
+            case 'semester':
+                [$y, $s] = explode('-S', $periode_key);
+                $start = ($s == 1) ? "$y-01-01" : "$y-07-01";
+                $end   = ($s == 1) ? "$y-06-30" : "$y-12-31";
+                $label = "Semester $s $y";
+                break;
+
+            case 'yearly':
+                $start = "$periode_key-01-01";
+                $end   = "$periode_key-12-31";
+                $label = "Tahun $periode_key";
+                break;
+
+            default:
+                $start = date('Y-m-01');
+                $end   = date('Y-m-t');
+                $label = date('F Y');
+        }
+
+        return [$start, $end, $label];
+    }
+
     public function index()
     {
         $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
@@ -408,96 +447,46 @@ class Absensi extends CI_Controller
 
     public function absen_harian()
     {
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
-        $data['title'] = "Data Absensi Harian";
-
-        $bulan_param = $this->input->get('bulan') ?: date('n');
-        $tahun_param = $this->input->get('tahun') ?: date('Y');
-        $keyword = $this->input->get('keyword');
-
-        $config['base_url'] = base_url('absensi/absen_harian');
-        // get_rekap_bulanan may return an array of rows; ensure total_rows is an integer
-        $all_rekap = $this->AbsensiHarian_model->get_rekap_bulanan($bulan_param, $tahun_param);
-        $config['total_rows'] = is_array($all_rekap) ? count($all_rekap) : (int) $all_rekap;
-        $config['per_page'] = 20;
-
-        $config['reuse_query_string'] = TRUE;
-        $config['first_url'] = $config['base_url'] . '?' . http_build_query($_GET);
-
-        $config['full_tag_open'] = '<nav><ul class="pagination">';
-        $config['full_tag_close'] = '</ul></nav>';
-        $config['first_link'] = 'Pertama';
-        $config['last_link'] = 'Terakhir';
-        $config['next_link'] = '&raquo;';
-        $config['prev_link'] = '&laquo;';
-        $config['cur_tag_open'] = '<li class="page-item active"><a class="page-link" href="#">';
-        $config['cur_tag_close'] = '</a></li>';
-        $config['num_tag_open'] = '<li class="page-item">';
-        $config['num_tag_close'] = '</li>';
-        $config['attributes'] = ['class' => 'page-link'];
-
-        $this->pagination->initialize($config);
-
-        $data['start'] = $this->uri->segment(3) ?: 0;
-        $data['absensi_harian'] = $this->AbsensiHarian_model->get_harian_full(
-            $bulan_param,
-            $tahun_param
-        );
-        $data['rekap'] = $this->AbsensiHarian_model->get_rekap_bulanan($bulan_param, $tahun_param);
-
-        $data['pegawai'] = $this->Absensi_model->get_all_pegawai();
-
-
-        $data['bulan'] = $bulan_param;
-        $data['tahun'] = $tahun_param;
-        // reuse the previously fetched rekap data to avoid duplicate queries
-        $data['rekap'] = $all_rekap;
-
-        // 🌤️ Data Cuaca
-        $latitude = -6.3452;
-        $longitude = 106.6725;
-        $api_url = "https://api.open-meteo.com/v1/forecast?latitude={$latitude}&longitude={$longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=Asia%2FJakarta";
-        $weather_data = json_decode(file_get_contents($api_url), true);
-
-        if ($weather_data && isset($weather_data['current'])) {
-            $data['temperature'] = $weather_data['current']['temperature_2m'];
-            $data['wind_speed'] = $weather_data['current']['wind_speed_10m'];
-            $data['humidity'] = $weather_data['current']['relative_humidity_2m'];
-            $data['weather_code'] = $weather_data['current']['weather_code'];
-            $data['update_time'] = date('d M Y H:i', strtotime($weather_data['current']['time']));
-            $data['sunrise'] = date('H:i', strtotime($weather_data['daily']['sunrise'][0]));
-            $data['sunset'] = date('H:i', strtotime($weather_data['daily']['sunset'][0]));
-        } else {
-            $data['temperature'] = '-';
-            $data['wind_speed'] = '-';
-            $data['humidity'] = '-';
-            $data['weather_code'] = '-';
-            $data['sunrise'] = '-';
-            $data['sunset'] = '-';
+        $bulan = $this->input->get('bulan') ?? date('n');
+        $tahun = $this->input->get('tahun') ?? date('Y');
+        $divisi_id = $this->input->get('divisi_id');
+        if ($divisi_id === null || $divisi_id === '') {
+            $divisi_id = 'all'; // atau null / 0
         }
 
-        $weather_codes = [
-            0 => 'Cerah',
-            1 => 'Cerah Berawan',
-            2 => 'Berawan',
-            3 => 'Mendung',
-            45 => 'Kabut',
-            48 => 'Kabut Beku',
-            51 => 'Gerimis Ringan',
-            61 => 'Hujan Ringan',
-            63 => 'Hujan Sedang',
-            65 => 'Hujan Lebat',
-            80 => 'Hujan Lokal',
-            95 => 'Badai Petir'
-        ];
-        $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
 
+        // Sinkronkan ke sistem periode
+        $periode_type = 'monthly';
+        $periode_key  = $tahun . '-' . str_pad($bulan, 2, '0', STR_PAD_LEFT);
+
+        [$start, $end, $label] = $this->getPeriodeRange($periode_type, $periode_key);
+
+        $this->load->model('AbsensiHarian_model');
+
+        $user = $this->db->get_where('user', [
+            'email' => $this->session->userdata('email')
+        ])->row_array();
+
+        $data = [
+            'title'         => 'Rekap Absensi',
+            'rekap'         => $this->AbsensiHarian_model->get_rekap_range($start, $end),
+            'periode_type'  => $periode_type,
+            'periode_key'   => $periode_key,
+            'label_periode' => $label,
+            'bulan'         => $bulan,
+            'tahun'         => $tahun,
+            'divisi_id'     => $divisi_id,
+            'user'          => $user
+        ];
+
+        $this->set_weather_data($data);
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);
         $this->load->view('template/sidebar', $data);
         $this->load->view('absensi/harian/index', $data);
         $this->load->view('template/footer', $data);
     }
+
     public function import_harian()
     {
         $file = $_FILES['file']['tmp_name'];
@@ -628,39 +617,36 @@ class Absensi extends CI_Controller
         redirect('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun);
     }
 
-
-    public function detail_harian($nip, $bulan = null, $tahun = null)
+    public function detail_harian($nip)
     {
-        $bulan = $bulan ?? date('m');
-        $tahun = $tahun ?? date('Y');
+        $periode_key = $this->input->get('periode_key');
+        if (!$periode_key) {
+            redirect('absensi/absen_harian');
+        }
 
-        // =========================
-        // LOAD MODEL
-        // =========================
+        [$tahun, $bulan] = explode('-', $periode_key);
+
         $this->load->model([
             'AbsensiHarian_model',
             'Pegawai_model',
             'Denda_model'
         ]);
 
-        // =========================
-        // DATA PEGAWAI
-        // =========================
+        /* =========================
+       DATA PEGAWAI
+    ========================= */
         $pegawai = $this->Pegawai_model->get_by_nip($nip);
         if (!$pegawai) {
-            $peg = $this->AbsensiHarian_model->get_pegawai_by_nip($nip);
             $pegawai = (object)[
-                'nip' => $peg->nip ?? $nip,
-                'nama_pegawai' => $peg->nama ?? 'Tidak Dikenal',
-                'divisi' => '-',
-                'jabatan' => '-'
+                'nip' => $nip,
+                'nama_pegawai' => 'Tidak Dikenal'
             ];
         }
 
-        // =========================
-        // DATA ABSENSI
-        // =========================
-        $data_absen = $this->AbsensiHarian_model
+        /* =========================
+       DATA ABSENSI
+    ========================= */
+        $rows = $this->AbsensiHarian_model
             ->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
 
         $absensi = [];
@@ -669,234 +655,146 @@ class Absensi extends CI_Controller
             'total_menit_telat' => 0,
             'total_tidak_finger' => 0,
             'total_denda' => 0,
-            'kategori' => [
-                'Tepat Waktu' => 0,
-                'Telat < 30 Menit' => 0,
-                'Telat 30–90 Menit' => 0,
-                'Telat > 90 Menit' => 0,
-                'Terlambat Tidak Menambah Jam Kerja' => 0,
-                'Tidak Finger' => 0,
-                'Libur' => 0,
-                'Sakit' => 0,
-                'Izin' => 0,
-                'Cuti' => 0,
-                'Dinas Luar' => 0,
-                'WFH' => 0
+            'konversi_telat' => [
+                'jam' => 0,
+                'menit' => 0
             ]
         ];
 
-        // =========================
-        // PROSES ABSENSI
-        // =========================
-        foreach ($data_absen as $row) {
+        foreach ($rows as $r) {
 
-            $tanggal  = $row['tanggal'];
-            $hari     = date('l', strtotime($tanggal));
-            $hari_num = date('N', strtotime($tanggal));
+            $tanggal = $r['tanggal'];
+            $hariNum = date('N', strtotime($tanggal)); // 1=Senin
+            $hariStr = date('l', strtotime($tanggal));
 
-            $jam_in  = trim($row['jam_in'] ?? '');
-            $jam_out = trim($row['jam_out'] ?? '');
-            $ket     = strtoupper(trim($row['keterangan'] ?? ''));
+            $jam_in  = $r['jam_in'];
+            $jam_out = $r['jam_out'];
+            $keterangan = strtoupper(trim($r['keterangan'] ?? ''));
 
-            $kategori      = '-';
-            $menit_telat   = 0;
-            $menit_lembur  = 0;
-            $jenis_denda   = null;
-            $nominal_denda = 0;
+            $menit_telat = (int) ($r['menit_telat'] ?? 0);
+            $id_denda    = $r['id_denda'];
+
+            $kategori = '-';
             $status_pulang = '-';
+            $jenis_denda = '-';
+            $nominal_denda = 0;
 
-            // =========================
-            // 1. LIBUR (SABTU & MINGGU)
-            // =========================
-            if ($hari_num >= 6) {
-                $summary['kategori']['Libur']++;
-
-                $absensi[] = [
-                    'tanggal' => $tanggal,
-                    'hari' => $hari,
-                    'jam_in' => '-',
-                    'jam_out' => '-',
-                    'kategori_telat' => 'Libur',
-                    'menit_telat' => 0,
-                    'status_pulang' => '-',
-                    'keterangan' => 'Libur',
-                    'bukti' => $row['bukti'] ?? null,
-                    'jenis_denda' => null,
-                    'nominal_denda' => 0
-                ];
-                continue;
+            /* =========================
+           JAM KERJA
+        ========================= */
+            if ($hariNum >= 6) {
+                // Sabtu / Minggu
+                $kategori = 'Libur';
+            } else {
+                $jam_masuk  = '07:30:00';
+                $jam_pulang = ($hariNum == 5) ? '16:30:00' : '16:00:00';
             }
 
-            // =========================
-            // 2. TIDAK FINGER (SALAH SATU KOSONG)
-            // =========================
-            if (
-                (empty($jam_in) && !empty($jam_out)) ||
-                (!empty($jam_in) && empty($jam_out))
+            /* =========================
+           KETERANGAN MANUAL (PRIORITAS UTAMA)
+        ========================= */
+            if (in_array($keterangan, [
+                'SAKIT',
+                'IZIN',
+                'CUTI',
+                'DINAS LUAR',
+                'WFH',
+                'LIBUR',
+                'ALPA'
+            ])) {
+
+                $kategori = ucfirst(strtolower($keterangan));
+                $status_pulang = '-';
+            }
+
+            /* =========================
+           TIDAK FINGER (HANYA JIKA HADIR & TANPA KETERANGAN)
+        ========================= */ elseif (
+                $kategori !== 'Libur' &&
+                (
+                    empty($jam_in) ||
+                    empty($jam_out) ||
+                    $jam_in === $jam_out
+                )
             ) {
+
+                $kategori = 'Tidak Finger';
+                $status_pulang = 'Tidak Lengkap';
                 $summary['total_tidak_finger']++;
-                $summary['kategori']['Tidak Finger']++;
-
-                $absensi[] = [
-                    'tanggal' => $tanggal,
-                    'hari' => $hari,
-                    'jam_in' => $jam_in ?: '-',
-                    'jam_out' => $jam_out ?: '-',
-                    'kategori_telat' => 'Tidak Finger',
-                    'menit_telat' => 0,
-                    'status_pulang' => 'Tidak Lengkap',
-                    'keterangan' => 'Tidak Finger',
-                    'bukti' => $row['bukti'] ?? null,
-                    'jenis_denda' => null,
-                    'nominal_denda' => 0
-                ];
-                continue;
             }
 
-            // =========================
-            // 3. KETERANGAN KHUSUS
-            // =========================
-            if (in_array($ket, ['SAKIT', 'IZIN', 'CUTI', 'DINAS LUAR', 'WFH'])) {
+            /* =========================
+           HADIR NORMAL
+        ========================= */ elseif ($kategori !== 'Libur') {
 
-                $mapKategori = [
-                    'SAKIT' => 'Sakit',
-                    'IZIN' => 'Izin',
-                    'CUTI' => 'Cuti',
-                    'DINAS LUAR' => 'Dinas Luar',
-                    'WFH' => 'WFH'
-                ];
+                // KATEGORI TELAT (DARI IMPORT)
+                if ($menit_telat == 0) {
+                    $kategori = 'Tepat Waktu';
+                } elseif ($menit_telat < 30) {
+                    $kategori = 'Telat < 30 Menit';
+                } elseif ($menit_telat <= 90) {
+                    $kategori = 'Telat 30–90 Menit';
+                } else {
+                    $kategori = 'Telat > 90 Menit';
+                }
 
-                $key = $mapKategori[$ket];
-                $summary['kategori'][$key]++;
+                $summary['total_hadir']++;
+                $summary['total_menit_telat'] += $menit_telat;
 
-                $absensi[] = [
-                    'tanggal' => $tanggal,
-                    'hari' => $hari,
-                    'jam_in' => '-',
-                    'jam_out' => '-',
-                    'kategori_telat' => $key,
-                    'menit_telat' => 0,
-                    'status_pulang' => '-',
-                    'keterangan' => $key,
-                    'bukti' => $row['bukti'] ?? null,
-                    'jenis_denda' => null,
-                    'nominal_denda' => 0
-                ];
-                continue;
-            }
+                /* =========================
+               STATUS PULANG & DENDA
+            ========================= */
+                if ($jam_out && $jam_out > $jam_pulang) {
 
-            // =========================
-            // 4. JAM KERJA
-            // =========================
-            $jam_masuk = strtotime('07:30');
+                    $status_pulang = 'Menambah Jam Kerja';
 
-            if ($hari_num == 5) { // Jumat
-                $jam_pulang = strtotime('16:30');
-            } else { // Senin - Kamis
-                $jam_pulang = strtotime('16:00');
-            }
-
-            $time_in  = strtotime($jam_in);
-            $time_out = strtotime($jam_out);
-
-            // =========================
-            // 5. TELAT
-            // =========================
-            $menit_telat = max(0, floor(($time_in - $jam_masuk) / 60));
-
-            if ($menit_telat == 0) {
-                $kategori = 'Tepat Waktu';
-            } elseif ($menit_telat < 30) {
-                $kategori = 'Telat < 30 Menit';
-            } elseif ($menit_telat <= 90) {
-                $kategori = 'Telat 30–90 Menit';
-            } else {
-                $kategori = 'Telat > 90 Menit';
-            }
-
-            // =========================
-            // 6. LEMBUR (SETELAH +60 MENIT)
-            // =========================
-            $mulai_lembur = $jam_pulang + (60 * 60);
-            $menit_lembur = ($time_out > $mulai_lembur)
-                ? floor(($time_out - $mulai_lembur) / 60)
-                : 0;
-            if ($menit_telat > 0 && $menit_lembur == 0 && $time_out <= $jam_pulang) {
-
-                $status_pulang = 'Terlambat Tidak Menambah Jam Kerja';
-                $summary['kategori']['Terlambat Tidak Menambah Jam Kerja']++;
-            } elseif ($menit_lembur >= 60) {
-
-                $status_pulang = 'Lembur';
-            } elseif ($time_out > $jam_pulang) {
-
-                $status_pulang = 'Pulang Normal';
-            } else {
-
-                $status_pulang = 'Pulang Tepat Waktu';
-            }
-
-            // =========================
-            // 7. DENDA 
-            // =========================
-            if ($menit_telat > 0) {
-                $d = $this->Denda_model->get_denda_by_menit($menit_telat);
-
-                if ($d) {
-                    if ($menit_lembur >= $menit_telat) {
-                        $nominal_denda = 0;
-                        $jenis_denda = 'Telat + Lembur (Bebas Denda)';
-                    } elseif ($menit_lembur > 0) {
-                        $nominal_denda = $d->jumlah / 2;
-                        $jenis_denda = 'Telat + Lembur (50%)';
-                    } else {
-                        $nominal_denda = $d->jumlah;
-                        $jenis_denda = $d->jenis_denda;
+                    // TELAT + TAMBAH JAM → 50%
+                    if ($menit_telat > 0 && $id_denda) {
+                        $d = $this->Denda_model->get_denda_by_menit($menit_telat);
+                        if ($d) {
+                            $jenis_denda = $d->jenis_denda . ' (50%)';
+                            $nominal_denda = $d->jumlah / 2;
+                            $summary['total_denda'] += $nominal_denda;
+                        }
                     }
+                } else {
 
-                    $summary['total_denda'] += $nominal_denda;
+                    $status_pulang = 'Pulang Normal';
+
+                    // TELAT TANPA TAMBAH JAM → FULL
+                    if ($menit_telat > 0 && $id_denda) {
+                        $d = $this->Denda_model->get_denda_by_menit($menit_telat);
+                        if ($d) {
+                            $jenis_denda = $d->jenis_denda;
+                            $nominal_denda = $d->jumlah;
+                            $summary['total_denda'] += $nominal_denda;
+                        }
+                    }
                 }
             }
 
-            $summary['total_hadir']++;
-            $summary['total_menit_telat'] += $menit_telat;
-            $summary['kategori'][$kategori]++;
-
             $absensi[] = [
                 'tanggal' => $tanggal,
-                'hari' => $hari,
-                'jam_in' => $jam_in,
-                'jam_out' => $jam_out,
+                'hari' => $hariStr,
+                'jam_in' => $jam_in ?: '-',
+                'jam_out' => $jam_out ?: '-',
                 'kategori_telat' => $kategori,
-                'menit_telat' => $menit_telat,
                 'status_pulang' => $status_pulang,
-                'keterangan' => '',
-                'bukti' => $row['bukti'] ?? null,
+                'nominal_denda' => $nominal_denda,
                 'jenis_denda' => $jenis_denda,
-                'nominal_denda' => $nominal_denda
+                'bukti' => $r['bukti']
             ];
         }
 
-        // =========================
-        // KONVERSI TELAT
-        // =========================
-        $total = $summary['total_menit_telat'];
-        $summary['konversi_telat'] = [
-            'hari' => floor($total / 480),
-            'jam' => floor(($total % 480) / 60),
-            'menit' => $total % 60
-        ];
+        /* =========================
+       KONVERSI MENIT TELAT
+    ========================= */
+        $summary['konversi_telat']['jam']   = floor($summary['total_menit_telat'] / 60);
+        $summary['konversi_telat']['menit'] = $summary['total_menit_telat'] % 60;
 
-        // =========================
-        // SORTING
-        // =========================
-        usort($absensi, function ($a, $b) {
-            return strtotime($a['tanggal']) <=> strtotime($b['tanggal']);
-        });
-
-        // =========================
-        // VIEW (SATU KALI)
-        // =========================
+        /* =========================
+       VIEW
+    ========================= */
         $data = [
             'pegawai' => $pegawai,
             'absensi' => $absensi,
@@ -908,6 +806,7 @@ class Absensi extends CI_Controller
                 'email' => $this->session->userdata('email')
             ])->row_array()
         ];
+
         $this->set_weather_data($data);
         $this->load->view('template/header', $data);
         $this->load->view('template/topbar', $data);

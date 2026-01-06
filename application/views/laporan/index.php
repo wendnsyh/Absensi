@@ -4,146 +4,106 @@
 
             <!-- PAGE HEADER -->
             <div class="page-header">
-                <h4 class="page-title"><?=$title ?></h4>
-                <ul class="breadcrumbs">
-                    <li class="nav-home">
-                        <a href="<?= base_url('dashboard') ?>">
-                            <i class="flaticon-home"></i>
-                        </a>
-                    </li>
-                    <li class="separator">
-                        <i class="flaticon-right-arrow"></i>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#"><?=$title ?></a>
-                    </li>
-                </ul>
+                <h4 class="page-title">Laporan Absensi</h4>
             </div>
 
-            <!-- FILTER CARD -->
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="card-title">Filter Laporan</h5>
-                </div>
+            <!-- FILTER -->
+            <div class="card mb-3">
                 <div class="card-body">
-                    <form method="get">
-                        <div class="row">
+                    <form method="get" class="form-inline">
 
-                            <!-- JENIS PERIODE -->
-                            <div class="col-md-4">
-                                <label>Jenis Periode</label>
-                                <select name="periode_type" id="periode_type"
-                                    class="form-control"
-                                    onchange="this.form.submit()" required>
-                                    <option value="">-- Pilih Tipe Periode --</option>
-                                    <option value="monthly" <?= ($periode_type == 'monthly') ? 'selected' : '' ?>>Bulanan</option>
-                                    <option value="quarter" <?= ($periode_type == 'quarter') ? 'selected' : '' ?>>Triwulan</option>
-                                    <option value="semester" <?= ($periode_type == 'semester') ? 'selected' : '' ?>>Semester</option>
-                                    <option value="yearly" <?= ($periode_type == 'yearly') ? 'selected' : '' ?>>Tahunan</option>
-                                </select>
-                            </div>
+                        <label class="mr-2">Bulan:</label>
+                        <select name="bulan"
+                            class="form-control mr-3"
+                            onchange="this.form.submit()">
+                            <?php for ($i = 1; $i <= 12; $i++): ?>
+                                <option value="<?= $i ?>" <?= ($bulan == $i) ? 'selected' : '' ?>>
+                                    <?= date("F", mktime(0, 0, 0, $i, 1)) ?>
+                                </option>
+                            <?php endfor; ?>
+                        </select>
 
-                            <!-- PERIODE -->
-                            <div class="col-md-4">
-                                <label>Pilih Periode</label>
-                                <select name="periode_key" class="form-control" required>
-                                    <option value="">-- Pilih Periode --</option>
-                                    <?php
-                                    if (
-                                        !empty($periode_type)
-                                        && isset($periode_list[$periode_type])
-                                    ):
-                                        foreach ($periode_list[$periode_type] as $p):
-                                    ?>
-                                            <option value="<?= $p['key'] ?>"
-                                                <?= ($periode_key == $p['key']) ? 'selected' : '' ?>>
-                                                <?= $p['label'] ?>
-                                            </option>
-                                    <?php endforeach;
-                                    endif; ?>
-                                </select>
-                            </div>
+                        <label class="mr-2">Tahun:</label>
+                        <select name="tahun"
+                            class="form-control mr-3"
+                            onchange="this.form.submit()">
+                            <?php for ($i = date('Y'); $i >= date('Y') - 5; $i--): ?>
+                                <option value="<?= $i ?>" <?= ($tahun == $i) ? 'selected' : '' ?>>
+                                    <?= $i ?>
+                                </option>
+                            <?php endfor; ?>
+                        </select>
 
-                            <!-- DIVISI -->
-                            <div class="col-md-4">
-                                <label>Divisi</label>
-                                <select name="divisi_id" class="form-control">
-                                    <option value="">Semua Divisi</option>
-                                    <?php foreach ($divisi as $d): ?>
-                                        <option value="<?= $d->id ?>"
-                                            <?= ($divisi_id == $d->id) ? 'selected' : '' ?>>
-                                            <?= $d->nama_divisi ?>
-                                        </option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
+                        <label class="mr-2">Divisi:</label>
+                        <select name="divisi_id"
+                            class="form-control"
+                            onchange="this.form.submit()">
+                            <option value="">Semua Divisi</option>
+                            <?php foreach ($divisi as $d): ?>
+                                <option value="<?= $d->id_divisi ?>"
+                                    <?= ($divisi_id == $d->id_divisi) ? 'selected' : '' ?>>
+                                    <?= $d->nama_divisi ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
 
-                        </div>
-
-                        <div class="mt-3">
-                            <button class="btn btn-primary">
-                                <i class="fas fa-search"></i> Tampilkan
-                            </button>
-
-                            <?php if (!empty($laporan)): ?>
-                                <a target="_blank"
-                                    href="<?= base_url('laporanabsensi/export_pdf?periode_type=' . $periode_type . '&periode_key=' . $periode_key . '&divisi_id=' . $divisi_id) ?>"
-                                    class="btn btn-danger ml-2">
-                                    <i class="fas fa-file-pdf"></i> Export PDF
-                                </a>
-                            <?php endif; ?>
-                        </div>
                     </form>
                 </div>
             </div>
 
             <!-- TABLE -->
-            <div class="card mt-3">
-                <div class="card-body table-responsive">
-                    <table class="table table-bordered table-hover">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th>No</th>
-                                <th>Nama</th>
-                                <th>NIP</th>
-                                <th>Tanggal</th>
-                                <th>Jam In</th>
-                                <th>Jam Out</th>
-                                <th>Status Pulang</th>
-                                <th>Bukti</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($laporan)): ?>
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+
+                        <table class="table table-striped table-hover">
+                            <thead class="thead-dark">
                                 <tr>
-                                    <td colspan="8" class="text-center">
-                                        Silakan pilih periode untuk menampilkan laporan
-                                    </td>
+                                    <th width="50">No</th>
+                                    <th>Nama Pegawai</th>
+                                    <th width="150">NIP</th>
+                                    <th class="text-center" width="150">
+                                        Total Hari Kerja
+                                    </th>
+                                    <th width="120">Aksi</th>
                                 </tr>
-                                <?php else: $no = 1;
-                                foreach ($laporan as $r): ?>
+                            </thead>
+                            <tbody>
+
+                                <?php if (empty($laporan)): ?>
                                     <tr>
-                                        <td><?= $no++ ?></td>
-                                        <td><?= $r['nama_pegawai'] ?></td>
-                                        <td><?= $r['nip'] ?></td>
-                                        <td><?= date('d M Y', strtotime($r['tanggal'])) ?></td>
-                                        <td><?= $r['jam_in'] ?: '-' ?></td>
-                                        <td><?= $r['jam_out'] ?: '-' ?></td>
-                                        <td><?= $r['status_pulang'] ?: '-' ?></td>
-                                        <td class="text-center">
-                                            <?php if (!empty($r['bukti'])): ?>
-                                                <img src="<?= base_url($r['bukti']) ?>"
-                                                    style="max-width:60px;border-radius:5px;cursor:pointer"
-                                                    onclick="window.open('<?= base_url($r['bukti']) ?>','_blank')">
-                                            <?php else: ?>
-                                                -
-                                            <?php endif; ?>
+                                        <td colspan="5" class="text-center">
+                                            Tidak ada data
                                         </td>
                                     </tr>
-                            <?php endforeach;
-                            endif; ?>
-                        </tbody>
-                    </table>
+                                    <?php else: $no = 1;
+                                    foreach ($laporan as $l): ?>
+                                        <tr>
+                                            <td><?= $no++ ?></td>
+                                            <td><?= htmlspecialchars($l->nama_pegawai) ?></td>
+                                            <td><?= $l->nip ?></td>
+                                            <td class="text-center">
+                                                <span class="badge badge-primary">
+                                                    <?= $l->total_hari_kerja ?> Hari
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a href="<?= base_url(
+                                                                'LaporanAbsensi/detail/' . $l->nip
+                                                                    . '?bulan=' . $bulan
+                                                                    . '&tahun=' . $tahun
+                                                            ) ?>" class="btn btn-info btn-sm">
+                                                    Detail
+                                                </a>
+                                            </td>
+                                        </tr>
+                                <?php endforeach;
+                                endif; ?>
+
+                            </tbody>
+                        </table>
+
+                    </div>
                 </div>
             </div>
 

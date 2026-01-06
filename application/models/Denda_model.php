@@ -28,4 +28,12 @@ class Denda_model extends CI_Model
             ->get($this->table)
             ->row();
     }
+
+    public function get_by_id($id_denda)
+    {
+        return $this->db
+            ->where('id_denda', $id_denda)
+            ->get($this->table)
+            ->row();
+    }
 }

@@ -60,59 +60,54 @@ class Fingerprint extends CI_Controller
             redirect('absensi/absen_harian');
         }
 
+        $this->load->model('AbsensiHarian_model');
+
         $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($_FILES['file']['tmp_name']);
         $sheet = $spreadsheet->getActiveSheet();
 
-        // === BACA PERIODE DARI EXCEL ===
+        /* =========================
+       BACA PERIODE DARI EXCEL
+    ========================= */
         $periode_text = trim($sheet->getCell('C2')->getValue());
-
         $tahun = date('Y');
         $bulan = date('m');
 
         if ($periode_text) {
-
-            // Ambil semua tanggal dari teks
-            preg_match_all(
-                '/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/',
-                $periode_text,
-                $matches
-            );
-
-            if (count($matches[1]) >= 1) {
-
-                // Ambil tanggal pertama sebagai acuan bulan
-                $tanggal_awal = str_replace('-', '/', $matches[1][0]);
-                $dt = DateTime::createFromFormat('d/m/Y', $tanggal_awal);
-
+            preg_match_all('/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/', $periode_text, $matches);
+            if (!empty($matches[1])) {
+                $dt = DateTime::createFromFormat('d/m/Y', str_replace('-', '/', $matches[1][0]));
                 if ($dt) {
                     $bulan = $dt->format('m');
                     $tahun = $dt->format('Y');
                 }
             }
         }
-        $data_insert = [];
 
+        $data_insert = [];
         $highestRow = $sheet->getHighestRow();
 
+        /* =========================
+       LOOP PEGAWAI
+    ========================= */
         for ($row = 5; $row <= $highestRow; $row++) {
 
             $nama = trim($sheet->getCell("B{$row}")->getValue());
-            if ($nama == '') continue;
+            if ($nama === '') continue;
 
-            // === PEGAWAI ===
             $pegawai = $this->db->get_where('pegawai', ['nama_pegawai' => $nama])->row();
-
             if ($pegawai) {
                 $nip = $pegawai->nip;
             } else {
-                $nip = time() + $row;
+                $nip = 'TMP' . time() . $row;
                 $this->db->insert('pegawai', [
                     'nip' => $nip,
                     'nama_pegawai' => $nama
                 ]);
             }
 
-            // === LOOP TANGGAL 1–31 (Kolom D s/d AH) ===
+            /* =========================
+           LOOP TANGGAL (1–31)
+        ========================= */
             for ($colIndex = 4; $colIndex <= 34; $colIndex++) {
 
                 $tanggal_ke = $colIndex - 3;
@@ -120,15 +115,17 @@ class Fingerprint extends CI_Controller
 
                 $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
                 $raw = trim($sheet->getCell($col . $row)->getValue());
-                if ($raw == '') continue;
+                if ($raw === '') continue;
 
-                $raw = str_replace("\r", "", $raw);
-                $lines = array_values(array_filter(array_map('trim', explode("\n", $raw))));
+                $lines = array_values(array_filter(array_map(
+                    'trim',
+                    preg_split("/\r\n|\n|\r/", $raw)
+                )));
 
                 $jam_in = null;
                 $jam_out = null;
 
-                if (count($lines) == 1) {
+                if (count($lines) === 1) {
                     $jam_in = $lines[0];
                 } elseif (count($lines) > 1) {
                     $jam_in = $lines[0];
@@ -136,32 +133,73 @@ class Fingerprint extends CI_Controller
                 }
 
                 $tanggal = "{$tahun}-{$bulan}-" . sprintf('%02d', $tanggal_ke);
+                $hariNum = date('N', strtotime($tanggal)); // 1=Senin
+
+                /* =========================
+               JAM KERJA
+            ========================= */
+                $jam_masuk = '07:30:00';
+
+                /* =========================
+               HITUNG MENIT TELAT (FINAL)
+            ========================= */
+                $menit_telat = 0;
+                $id_denda = null;
+
+                // TELAT HANYA JIKA JAM MASUK > 07:30
+                if (!empty($jam_in) && $jam_in > $jam_masuk) {
+
+                    $menit_telat = floor(
+                        (strtotime($jam_in) - strtotime($jam_masuk)) / 60
+                    );
+
+                    // FK DENDA
+                    if ($menit_telat >= 1 && $menit_telat <= 29) {
+                        $id_denda = 1;
+                    } elseif ($menit_telat <= 90) {
+                        $id_denda = 2;
+                    } elseif ($menit_telat > 90) {
+                        $id_denda = 3;
+                    }
+                }
 
                 $data_insert[] = [
-                    'nip'        => $nip,
-                    'nama'       => $nama,
-                    'tanggal'    => $tanggal,
-                    'hari'       => date('l', strtotime($tanggal)),
-                    'jam_in'     => $jam_in,
-                    'jam_out'    => $jam_out,
-                    'keterangan' => 'HADIR'
+                    'nip'          => $nip,
+                    'nama'         => $nama,
+                    'tanggal'      => $tanggal,
+                    'bulan'        => (int)$bulan,
+                    'tahun'        => (int)$tahun,
+                    'hari'         => date('l', strtotime($tanggal)),
+                    'jam_in'       => $jam_in,
+                    'jam_out'      => $jam_out,
+                    'menit_telat'  => $menit_telat,
+                    'id_denda'     => $id_denda,
+                    'keterangan'   => 'HADIR'
                 ];
             }
         }
 
-        if ($data_insert) {
+        if (!empty($data_insert)) {
             $this->AbsensiHarian_model->insert_batch($data_insert);
             $this->session->set_flashdata(
                 'message',
-                '<div class="alert alert-success">Import berhasil (Periode otomatis)</div>'
+                '<div class="alert alert-success">Import Fingerprint berhasil</div>'
             );
         }
 
         redirect('absensi/absen_harian');
     }
 
-    public function edit_kehadiran($nip, $bulan, $tahun)
+
+    public function edit_kehadiran($nip)
     {
+        $periode_key = $this->input->get('periode_key');
+        if (!$periode_key) {
+            redirect('absensi/detail_harian');
+        }
+
+        [$tahun, $bulan] = explode('-', $periode_key);
+
         $this->load->model('AbsensiHarian_model');
         $this->load->model('Pegawai_model');
 
@@ -220,8 +258,7 @@ class Fingerprint extends CI_Controller
 
         foreach ($post['tanggal'] as $i => $tanggal) {
 
-            $ket = $post['keterangan'][$i] ?? '';
-            $ket = trim($ket);
+            $ket = trim($post['keterangan'][$i] ?? '');
 
             $existing = $this->db->get_where('absensi_harian', [
                 'nip' => $nip,
@@ -239,8 +276,8 @@ class Fingerprint extends CI_Controller
             }
 
             /* =====================
-       HANDLE UPLOAD BUKTI
-    ===================== */
+           HANDLE UPLOAD BUKTI
+        ===================== */
             $buktiFile = null;
 
             if ($ket !== 'Libur' && isset($_FILES['bukti']['name'][$i]) && $_FILES['bukti']['name'][$i] != '') {
@@ -249,8 +286,10 @@ class Fingerprint extends CI_Controller
                 $config['allowed_types'] = 'jpg|jpeg|png|pdf';
                 $config['max_size']      = 2048;
                 $config['file_name']     = 'bukti_' . $nip . '_' . $tanggal . '_' . time();
+
                 $this->load->library('upload');
                 $this->upload->initialize($config);
+
                 $_FILES['file']['name']     = $_FILES['bukti']['name'][$i];
                 $_FILES['file']['type']     = $_FILES['bukti']['type'][$i];
                 $_FILES['file']['tmp_name'] = $_FILES['bukti']['tmp_name'][$i];
@@ -263,10 +302,10 @@ class Fingerprint extends CI_Controller
             }
 
             /* =====================
-       UPDATE / INSERT
-    ===================== */
+           UPDATE / INSERT
+        ===================== */
             $data = [
-                'keterangan' => $ket,
+                'keterangan' => $ket
             ];
 
             if ($buktiFile) {
@@ -286,6 +325,7 @@ class Fingerprint extends CI_Controller
             }
         }
 
-        redirect("absensi/detail_harian/$nip/$bulan/$tahun");
+        $periode_key = $tahun . '-' . str_pad($bulan, 2, '0', STR_PAD_LEFT);
+        redirect("absensi/detail_harian/{$nip}?periode_key={$periode_key}");
     }
 }
