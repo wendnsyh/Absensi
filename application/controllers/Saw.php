@@ -113,7 +113,9 @@ class Saw extends CI_Controller
                 $sum = array_sum($bobot);
                 if ($sum > 1.01 && $sum <= 300) {
                     // mungkin tersimpan 100 scale -> convert to unit scale
-                    $bobot = array_map(fn($v) => $v / 100, $bobot);
+                    $bobot = array_map(function ($v) {
+                        return $v / 100;
+                    }, $bobot);
                 } elseif ($sum == 0) {
                     // beri bobot default
                     $bobot = ['hari_kerja' => 0.4, 'skills' => 0.3, 'attitude' => 0.3];
@@ -153,7 +155,12 @@ class Saw extends CI_Controller
                     ];
                 }
 
-                usort($ranking, fn($a, $b) => $b['score'] <=> $a['score']);
+                usort($ranking, function ($a, $b) {
+                    if ($a['score'] == $b['score']) {
+                        return 0;
+                    }
+                    return ($a['score'] < $b['score']) ? 1 : -1;
+                });
 
                 $data['ranking'] = $ranking;
                 $data['hasil_raw'] = $penilaian;
@@ -333,18 +340,26 @@ class Saw extends CI_Controller
             $penilaian['id_divisi']
         );
 
-        // max
-        $max_hari   = max(array_column($all, 'hari_kerja')) ?: 1;
-        $max_skill  = max(array_column($all, 'skills')) ?: 1;
-        $max_att    = max(array_column($all, 'attitude')) ?: 1;
+        $max_hari  = 1;
+        $max_skill = 1;
+        $max_att   = 1;
 
-        // normalisasi
-        $penilaian['n_hari']  = $penilaian['hari_kerja'] / $max_hari;
-        $penilaian['n_skill'] = $penilaian['skills'] / $max_skill;
-        $penilaian['n_att']   = $penilaian['attitude'] / $max_att;
+        if (!empty($all)) {
+            foreach ($all as $row) {
+                $max_hari  = max($max_hari,  (float) ($row->hari_kerja ?? 0));
+                $max_skill = max($max_skill, (float) ($row->skills ?? 0));
+                $max_att   = max($max_att,  (float) ($row->attitude ?? 0));
+            }
+        }
+
+        // NORMALISASI (ANTI DIVIDE BY ZERO)
+        $penilaian['n_hari']  = $max_hari  > 0 ? $penilaian['hari_kerja'] / $max_hari  : 0;
+        $penilaian['n_skill'] = $max_skill > 0 ? $penilaian['skills']     / $max_skill : 0;
+        $penilaian['n_att']   = $max_att   > 0 ? $penilaian['attitude']   / $max_att   : 0;
 
         // bobot
-        $bobot = $this->Saw_model->get_bobot();
+        $bobot_raw = $this->Saw_model->get_bobot();
+        $bobot = is_object($bobot_raw) ? (array)$bobot_raw : $bobot_raw;
 
         // nilai akhir
         $penilaian['nilai_akhir'] =

@@ -15,6 +15,16 @@ class AbsensiHarian_model extends CI_Model
             : false;
     }
 
+    public function get_by_bulan_tahun($bulan, $tahun)
+    {
+        $this->db->select('*');
+        $this->db->from('absensi_harian');
+        $this->db->where('MONTH(tanggal)', $bulan);
+        $this->db->where('YEAR(tanggal)', $tahun);
+        $this->db->order_by('tanggal', 'ASC');
+        return $this->db->get()->result();
+    }
+
     /* =========================
        GET BY NIP + BULAN + TAHUN
        (TANPA LOGIKA TELAT)

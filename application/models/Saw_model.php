@@ -345,7 +345,13 @@ class Saw_model extends CI_Model
         }
 
         // 6. Ranking
-        usort($result, fn($a, $b) => $b['score'] <=> $a['score']);
+        usort($result, function ($a, $b) {
+            if ($a['score'] == $b['score']) {
+                return 0;
+            }
+            return ($a['score'] < $b['score']) ? 1 : -1;
+        });
+
 
         return $result;
     }
