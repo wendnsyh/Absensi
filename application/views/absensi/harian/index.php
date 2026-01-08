@@ -3,7 +3,7 @@
         <div class="page-inner">
 
             <div class="page-header">
-                <h4 class="page-title">Rekap Absensi Bulanan</h4>
+                <h4 class="page-title"><?= $title ?></h4>
                 <ul class="breadcrumbs">
                     <li class="nav-home">
                         <a href="<?= base_url('dashboard') ?>">
@@ -99,14 +99,16 @@
                                                     <i class="fas fa-edit"></i> Edit
                                                 </a>
                                                 <a href="<?= base_url(
-                                                                'absensi/hapus_rekap/' . $r['nip']
-                                                                    . '?periode_type=' . $periode_type
-                                                                    . '&periode_key=' . $periode_key
+                                                                'absensi/delete_harian_by_nip/' . $r['nip']
+                                                                    . '?bulan=' . $bulan
+                                                                    . '&tahun=' . $tahun
                                                             ) ?>"
                                                     class="btn btn-danger btn-sm"
-                                                    onclick="return confirm('Yakin ingin menghapus semua absensi pegawai pada periode ini?')">
+                                                    onclick="return confirm('Yakin hapus absensi pegawai ini di bulan tersebut?')">
                                                     <i class="fas fa-trash"></i> Hapus
                                                 </a>
+
+
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

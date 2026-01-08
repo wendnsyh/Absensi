@@ -17,6 +17,10 @@
                     <i class="fas fa-plus"></i> Tambah Denda
                 </button>
             </div>
+            <?php if ($this->session->flashdata('message')): ?>
+                <?= $this->session->flashdata('message'); ?>
+            <?php endif; ?>
+
 
             <div class="card">
                 <div class="card-body table-responsive">
@@ -44,11 +48,11 @@
                                             data-target="#modalEdit<?= $d->id_denda ?>">
                                             <i class="fas fa-edit">Edit</i>
                                         </button>
-                                        <button class="btn btn-danger btn-sm"
-                                            data-toggle="modal"
-                                            data-target="#modalEdit<?= $d->id_denda ?>">
+                                        <a href="<?= base_url('denda/delete/' . $d->id_denda) ?>"
+                                            class="btn btn-danger btn-sm"
+                                            onclick="return confirm('Yakin ingin menghapus denda ini?')">
                                             <i class="fas fa-trash"></i> Hapus
-                                        </button>
+                                        </a>
                                     </td>
                                 </tr>
                             <?php endforeach ?>

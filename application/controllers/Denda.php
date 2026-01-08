@@ -93,4 +93,23 @@ class Denda extends CI_Controller
 
         redirect('denda');
     }
+    public function delete($id_denda)
+    {
+        if (!$id_denda) {
+            $this->session->set_flashdata(
+                'message',
+                '<div class="alert alert-danger">ID denda tidak valid</div>'
+            );
+            redirect('denda');
+        }
+
+        $this->Denda_model->delete($id_denda);
+
+        $this->session->set_flashdata(
+            'message',
+            '<div class="alert alert-success">Data denda berhasil dihapus</div>'
+        );
+
+        redirect('denda');
+    }
 }

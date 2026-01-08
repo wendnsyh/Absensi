@@ -817,42 +817,28 @@ class Absensi extends CI_Controller
 
 
 
-    public function hapus_rekap($nip, $bulan, $tahun)
+    public function delete_harian_by_nip($nip)
     {
-        if ($nip == "-" || empty($nip)) {
-            $this->session->set_flashdata('message', '<div class="alert alert-danger">Tidak dapat menghapus data tanpa NIP.</div>');
+        // dari halaman rekap
+        $bulan = $this->input->get('bulan');
+        $tahun = $this->input->get('tahun');
+
+        // fallback kalau delete dari halaman lain
+        if (!$bulan || !$tahun) {
             redirect('absensi/absen_harian');
         }
 
-        $this->db->where('nip', $nip);
-        $this->db->where('MONTH(tanggal)', $bulan);
-        $this->db->where('YEAR(tanggal)', $tahun);
-        $this->db->delete('absensi_harian');
+        $this->load->model('AbsensiHarian_model');
 
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Data absensi berhasil dihapus.</div>');
-        redirect('absensi/absen_harian');
-    }
+        $this->AbsensiHarian_model
+            ->delete_by_nip_bulan_tahun($nip, $bulan, $tahun);
 
-    public function edit_status($nip, $bulan, $tahun)
-    {
-        $data['absen'] = $this->AbsensiHarian_model->get_by_nip_bulan_tahun($nip, $bulan, $tahun);
-        $data['nip'] = $nip;
-        $data['bulan'] = $bulan;
-        $data['tahun'] = $tahun;
+        $this->session->set_flashdata(
+            'message',
+            '<div class="alert alert-success">Data absensi berhasil dihapus</div>'
+        );
 
-        $this->load->view('absensi/harian/edit_status', $data);
-    }
-
-    public function update_status()
-    {
-        $id = $this->input->post('id');
-        $status = $this->input->post('status');
-
-        $this->AbsensiHarian_model->update($id, [
-            'status' => $status
-        ]);
-
-        $this->session->set_flashdata('message', 'Status berhasil diperbarui!');
-        redirect('absensi/absen_harian');
+        // ⬅️ PENTING: redirect dengan parameter
+        redirect('absensi/absen_harian?bulan=' . $bulan . '&tahun=' . $tahun);
     }
 }

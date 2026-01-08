@@ -36,4 +36,11 @@ class Denda_model extends CI_Model
             ->get($this->table)
             ->row();
     }
+
+    public function delete($id_denda)
+    {
+        return $this->db
+            ->where('id_denda', $id_denda)
+            ->delete('denda');
+    }
 }
