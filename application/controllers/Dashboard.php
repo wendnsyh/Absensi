@@ -136,7 +136,7 @@ class Dashboard extends CI_Controller
         $data['statistik'] = $statistik;
         $data['kalender'] = $kalender;
 
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
 
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);

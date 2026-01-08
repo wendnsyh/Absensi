@@ -22,7 +22,7 @@
                                 <tr>
                                     <th>No</th>
                                     <th>Nama</th>
-                                    <th>Email</th>
+                                    <th>username</th>
                                     <th>Role</th>
                                     <th>Status</th>
                                     <th>Aksi</th>
@@ -34,7 +34,7 @@
                                     <tr>
                                         <td><?= $no++; ?></td>
                                         <td><?= $u['name']; ?></td>
-                                        <td><?= $u['email']; ?></td>
+                                        <td><?= $u['username']; ?></td>
                                         <td><?= $u['role_id'] == 1 ? 'Super Admin' : 'Admin'; ?></td>
                                         <td>
                                             <?php if ($u['is_active'] == 1): ?>
@@ -71,8 +71,8 @@
                                                             <input type="text" class="form-control" name="name" value="<?= $u['name']; ?>" required>
                                                         </div>
                                                         <div class="form-group">
-                                                            <label>Email</label>
-                                                            <input type="email" class="form-control" name="email" value="<?= $u['email']; ?>" required>
+                                                            <label>username</label>
+                                                            <input type="username" class="form-control" name="username" value="<?= $u['username']; ?>" required>
                                                         </div>
                                                         <div class="form-group">
                                                             <label>Role</label>
@@ -123,9 +123,9 @@
                                 <?= form_error('name', '<small class="text-danger">', '</small>'); ?>
                             </div>
                             <div class="form-group">
-                                <label>Email</label>
-                                <input type="email" class="form-control" name="email" required>
-                                <?= form_error('email', '<small class="text-danger">', '</small>'); ?>
+                                <label>username</label>
+                                <input type="username" class="form-control" name="username" required>
+                                <?= form_error('username', '<small class="text-danger">', '</small>'); ?>
                             </div>
                             <div class="form-group">
                                 <label>Password</label>

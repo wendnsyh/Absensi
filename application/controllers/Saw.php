@@ -59,7 +59,7 @@ class Saw extends CI_Controller
     {
         $data['title'] = "Hasil Penilaian SAW";
         $this->set_weather_data($data);
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
 
         // pilihan filter dari query string
         $periode_type = $this->input->get('periode_type') ?: null;
@@ -181,7 +181,7 @@ class Saw extends CI_Controller
         $this->set_weather_data($data);
 
         $data['user'] = $this->db->get_where('user', [
-            'email' => $this->session->userdata('email')
+            'username' => $this->session->userdata('username')
         ])->row_array();
 
         $data['periode_list'] = $this->Saw_model->get_periode_list();
@@ -261,7 +261,7 @@ class Saw extends CI_Controller
         $this->set_weather_data($data);
 
         $data['user'] = $this->db->get_where('user', [
-            'email' => $this->session->userdata('email')
+            'username' => $this->session->userdata('username')
         ])->row_array();
 
         $data['bobot'] = $this->Saw_model->get_bobot(); // simpan DESIMAL
@@ -317,7 +317,7 @@ class Saw extends CI_Controller
         $this->set_weather_data($data);
 
         $data['user'] = $this->db->get_where('user', [
-            'email' => $this->session->userdata('email')
+            'username' => $this->session->userdata('username')
         ])->row_array();
 
         $penilaian = $this->db

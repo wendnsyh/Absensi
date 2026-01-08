@@ -30,7 +30,6 @@
                                     <th>NIP</th>
                                     <th>Nama Pegawai</th>
                                     <th>Divisi</th>
-                                    <th>Jabatan</th>
                                     <th>Status</th>
                                     <th width="160">Aksi</th>
                                 </tr>
@@ -49,7 +48,7 @@
                                                 : '<span class="badge badge-danger">Belum diatur</span>' ?>
                                         </td>
 
-                                        <td><?= htmlspecialchars($p->jabatan ?: '-') ?></td>
+                                       
 
                                         <td>
                                             <?php if (($p->status_aktif ?? 'aktif') == "aktif"): ?>
@@ -108,9 +107,6 @@
                                                             <?php endforeach ?>
                                                         </select>
 
-                                                        <label class="mt-2">Jabatan</label>
-                                                        <input type="text" name="jabatan" class="form-control"
-                                                            value="<?= $p->jabatan ?>">
 
                                                         <label class="mt-2">Status</label>
                                                         <select name="status_aktif" class="form-control">
@@ -167,9 +163,6 @@
                             <option value="<?= $d->id_divisi ?>"><?= $d->nama_divisi ?></option>
                         <?php endforeach ?>
                     </select>
-
-                    <label class="mt-2">Jabatan</label>
-                    <input type="text" name="jabatan" class="form-control">
 
                 </div>
 

@@ -237,7 +237,7 @@ class Fingerprint extends CI_Controller
         ];
         $this->set_weather_data($data);
         $data['user'] = $this->db->get_where('user', [
-            'email' => $this->session->userdata('email')
+            'username' => $this->session->userdata('username')
         ])->row_array();
 
         $this->load->view('template/header', $data);

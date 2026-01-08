@@ -14,12 +14,12 @@ class Menu extends CI_Controller
     public function __construct()
     {
         parent::__construct();
-        is_logged_in();
+        //is_logged_in();
     }
 
     public function index()
     {
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Menu Management";
 
         // Ambil data cuaca
@@ -83,7 +83,7 @@ class Menu extends CI_Controller
     public function submenu()
     {
         $data['title'] = "Submenu Management";
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $this->load->model('Menu_model', 'menu');
 
         $data['subMenu'] = $this->menu->getSubMenu();
@@ -239,7 +239,7 @@ class Menu extends CI_Controller
         ];
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
         $data['title'] = 'Edit Menu';
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['menu'] = $this->db->get_where('user_menu', ['id' => $id])->row_array();
 
         $this->form_validation->set_rules('menu', 'Nama Menu', 'required|trim');

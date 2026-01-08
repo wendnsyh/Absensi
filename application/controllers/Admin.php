@@ -16,7 +16,7 @@ class Admin extends CI_Controller
     {
         parent::__construct();
         $this->load->model('User_model');
-        is_logged_in();
+        //is_logged_in();
     }
     public function index()
     {
@@ -57,7 +57,7 @@ class Admin extends CI_Controller
             95 => 'Badai Petir'
         ];
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Dashboard";
 
         $this->load->view('template/header', $data);
@@ -107,7 +107,7 @@ class Admin extends CI_Controller
         ];
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
 
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Manajemen Akun";
         $data['users'] = $this->User_model->getAllUsers();
         $data['roles'] = $this->User_model->getUserRoles();
@@ -122,7 +122,7 @@ class Admin extends CI_Controller
     public function addUser()
     {
         $this->form_validation->set_rules('name', 'Nama', 'required|trim');
-        $this->form_validation->set_rules('email', 'Email', 'required|valid_email|is_unique[user.email]');
+        $this->form_validation->set_rules('username', 'username', 'required|valid_username|is_unique[user.username]');
         $this->form_validation->set_rules('password', 'Password', 'required|min_length[5]');
 
         if ($this->form_validation->run() == false) {
@@ -130,7 +130,7 @@ class Admin extends CI_Controller
         } else {
             $data = [
                 'name' => htmlspecialchars($this->input->post('name', true)),
-                'email' => htmlspecialchars($this->input->post('email', true)),
+                'username' => htmlspecialchars($this->input->post('username', true)),
                 'password' => password_hash($this->input->post('password'), PASSWORD_DEFAULT),
                 'role_id' => 2, // default Admin, tidak bisa buat Super Admin
                 'is_active' => 1
@@ -149,7 +149,7 @@ class Admin extends CI_Controller
     {
         $data = [
             'name'      => $this->input->post('name'),
-            'email'     => $this->input->post('email'),
+            'username'     => $this->input->post('username'),
             'role_id'   => $this->input->post('role_id'),
             'is_active' => $this->input->post('is_active')
         ];
@@ -220,7 +220,7 @@ class Admin extends CI_Controller
         ];
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
 
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Role";
 
         $data['role'] = $this->db->get('user_role')->result_array();
@@ -272,7 +272,7 @@ class Admin extends CI_Controller
             95 => 'Badai Petir'
         ];
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Edit Role";
 
         // ambil data role berdasarkan ID
@@ -343,7 +343,7 @@ class Admin extends CI_Controller
             95 => 'Badai Petir'
         ];
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Role Access";
 
         $data['role'] = $this->db->get_where('user_role', ['id' => $role_id])->row_array();

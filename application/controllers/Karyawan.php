@@ -13,7 +13,7 @@ class Karyawan extends CI_Controller
     public function index()
     {
         $data['title'] = 'Data Karyawan';
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['karyawan'] = $this->karyawan->getAll();
 
         // === API Cuaca Terkini ===

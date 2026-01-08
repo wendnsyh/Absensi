@@ -42,7 +42,12 @@
                                         <button class="btn btn-warning btn-sm"
                                             data-toggle="modal"
                                             data-target="#modalEdit<?= $d->id_denda ?>">
-                                            Edit
+                                            <i class="fas fa-edit">Edit</i>
+                                        </button>
+                                        <button class="btn btn-danger btn-sm"
+                                            data-toggle="modal"
+                                            data-target="#modalEdit<?= $d->id_denda ?>">
+                                            <i class="fas fa-trash"></i> Hapus
                                         </button>
                                     </td>
                                 </tr>

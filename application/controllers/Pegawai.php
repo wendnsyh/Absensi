@@ -55,12 +55,12 @@ class Pegawai extends CI_Controller
     public function index()
     {
         $data['title'] = 'Data Pegawai';
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['divisi_list'] = $this->Pegawai_model->get_divisi_list();
         $data['pegawai'] = $this->Pegawai_model->get_all();
         $this->set_weather_data($data);
         $data['user'] = $this->db->get_where('user', [
-            'email' => $this->session->userdata('email')
+            'username' => $this->session->userdata('username')
         ])->row_array();
 
         $this->load->view('template/header', $data);

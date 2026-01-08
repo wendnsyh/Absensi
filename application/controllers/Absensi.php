@@ -115,7 +115,7 @@ class Absensi extends CI_Controller
 
     public function index()
     {
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Data Absensi";
 
         $bulan_param = $this->input->get('bulan');
@@ -303,7 +303,7 @@ class Absensi extends CI_Controller
         $data['windspeed'] = $cuaca['windspeed'] ?? '-';
         $data['time'] = $cuaca['time'] ?? '-';
 
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Detail Absensi";
 
         $latitude = -6.3452; // Koordinat Kecamatan Setu, Tangerang Selatan
@@ -388,7 +388,7 @@ class Absensi extends CI_Controller
 
     public function laporan_rekap()
     {
-        $data['user'] = $this->db->get_where('user', ['email' => $this->session->userdata('email')])->row_array();
+        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
         $data['title'] = "Laporan Rekap Absensi";
 
         $data['start_date'] = $this->input->post('start_date');
@@ -464,7 +464,7 @@ class Absensi extends CI_Controller
         $this->load->model('AbsensiHarian_model');
 
         $user = $this->db->get_where('user', [
-            'email' => $this->session->userdata('email')
+            'username' => $this->session->userdata('username')
         ])->row_array();
 
         $data = [
@@ -803,7 +803,7 @@ class Absensi extends CI_Controller
             'tahun' => $tahun,
             'title' => 'Detail Absensi Harian',
             'user' => $this->db->get_where('user', [
-                'email' => $this->session->userdata('email')
+                'username' => $this->session->userdata('username')
             ])->row_array()
         ];
 

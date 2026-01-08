@@ -45,12 +45,7 @@
                             <?php endfor; ?>
                         </select>
                     </form>
-
-                    <!-- Dua Tombol Import -->
                     <div>
-                        <button class="btn btn-success mr-2" data-toggle="modal" data-target="#importHarianModal">
-                            <i class="fas fa-file-excel"></i> Import Absensi Harian
-                        </button>
 
                         <button class="btn btn-primary" data-toggle="modal" data-target="#importFingerModal">
                             <i class="fas fa-fingerprint"></i> Import Fingerprint
@@ -110,7 +105,8 @@
                                                             ) ?>"
                                                     class="btn btn-danger btn-sm"
                                                     onclick="return confirm('Yakin ingin menghapus semua absensi pegawai pada periode ini?')">
-
+                                                    <i class="fas fa-trash"></i> Hapus
+                                                </a>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>

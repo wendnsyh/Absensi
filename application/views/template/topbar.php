@@ -77,7 +77,7 @@
                                             </div>
                                             <div class="u-text">
                                                 <h4><?= $user['name']; ?></h4>
-                                                <p class="text-muted"><?= $user['email']; ?></p>
+                                                <p class="text-muted"><?= $user['username']; ?></p>
                                                 <a href="<?= base_url('user') ?>" class="btn btn-xs btn-secondary btn-sm">
                                                     View Profile
                                                 </a>

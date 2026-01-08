@@ -13,14 +13,14 @@ class User extends CI_Controller
     public function __construct()
     {
         parent::__construct();
-        is_logged_in();
+        //is_logged_in();
     }
 
     public function index()
     {
         $data['user'] = $this->db->get_where(
             'user',
-            ['email' => $this->session->userdata('email')]
+            ['username' => $this->session->userdata('username')]
         )->row_array();
         $data['title'] = "Profil Saya";
          // Ambil data cuaca
@@ -73,17 +73,17 @@ class User extends CI_Controller
     {
         $data['user'] = $this->db->get_where(
             'user',
-            ['email' => $this->session->userdata('email')]
+            ['username' => $this->session->userdata('username')]
         )->row_array();
 
         $name  = $this->input->post('name');
-        $email = $this->input->post('email');
+        $username = $this->input->post('username');
         $password_baru       = $this->input->post('password_baru');
         $konfirmasi_password = $this->input->post('konfirmasi_password');
 
         // validasi
         $this->form_validation->set_rules('name', 'Nama', 'required|trim');
-        $this->form_validation->set_rules('email', 'Email', 'required|trim|valid_email');
+        $this->form_validation->set_rules('username', 'username', 'required|trim|valid_username');
 
         if ($this->form_validation->run() == false) {
             $this->index();
@@ -112,7 +112,7 @@ class User extends CI_Controller
 
             // Update data dasar
             $this->db->set('name', $name);
-            $this->db->set('email', $email);
+            $this->db->set('username', $username);
 
             // Update password jika diisi
             if (!empty($password_baru)) {
