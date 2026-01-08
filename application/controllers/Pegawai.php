@@ -11,6 +11,9 @@ class Pegawai extends CI_Controller
         $this->load->library(['session', 'form_validation']);
     }
 
+    /* =========================
+       WEATHER DATA
+    ========================== */
     private function set_weather_data(&$data)
     {
         $latitude = -6.3452;
@@ -49,19 +52,49 @@ class Pegawai extends CI_Controller
             80 => 'Hujan Lokal',
             95 => 'Badai Petir'
         ];
+
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
     }
 
+    /* =========================
+       VALIDASI NIP UNIQUE
+    ========================== */
+    public function check_nip_unique($nip, $id_pegawai = null)
+    {
+        $this->db->where('nip', $nip);
+
+        if ($id_pegawai !== null) {
+            $this->db->where('id_pegawai !=', $id_pegawai);
+        }
+
+        $query = $this->db->get('pegawai');
+
+        if ($query->num_rows() > 0) {
+            $this->form_validation->set_message(
+                'check_nip_unique',
+                'NIP sudah digunakan.'
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+
+    /* =========================
+       INDEX
+    ========================== */
     public function index()
     {
         $data['title'] = 'Data Pegawai';
-        $data['user'] = $this->db->get_where('user', ['username' => $this->session->userdata('username')])->row_array();
-        $data['divisi_list'] = $this->Pegawai_model->get_divisi_list();
-        $data['pegawai'] = $this->Pegawai_model->get_all();
-        $this->set_weather_data($data);
         $data['user'] = $this->db->get_where('user', [
             'username' => $this->session->userdata('username')
         ])->row_array();
+
+        $data['divisi_list'] = $this->Pegawai_model->get_divisi_list();
+        $data['pegawai'] = $this->Pegawai_model->get_all();
+
+        $this->set_weather_data($data);
 
         $this->load->view('template/header', $data);
         $this->load->view('template/sidebar', $data);
@@ -70,9 +103,16 @@ class Pegawai extends CI_Controller
         $this->load->view('template/footer');
     }
 
+    /* =========================
+       ADD
+    ========================== */
     public function add()
     {
-        $this->form_validation->set_rules('nip', 'NIP', 'required|trim');
+        $this->form_validation->set_rules(
+            'nip',
+            'NIP',
+            'required|trim|callback_check_nip_unique'
+        );
         $this->form_validation->set_rules('nama_pegawai', 'Nama', 'required|trim');
 
         if ($this->form_validation->run() === false) {
@@ -83,18 +123,26 @@ class Pegawai extends CI_Controller
         $data = [
             'nama_pegawai' => $this->input->post('nama_pegawai', true),
             'nip' => $this->input->post('nip', true),
-            
             'id_divisi' => $this->input->post('id_divisi') ?: null
         ];
 
         $this->Pegawai_model->insert($data);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Pegawai berhasil ditambahkan!</div>');
+        $this->session->set_flashdata(
+            'message',
+            '<div class="alert alert-success">Pegawai berhasil ditambahkan!</div>'
+        );
         redirect('pegawai');
     }
 
     public function edit($id)
     {
-        $this->form_validation->set_rules('nip', 'NIP', 'required|trim');
+        $nip_lama = $this->input->post('nip_lama');
+
+        $this->form_validation->set_rules(
+            'nip',
+            'NIP',
+            'required|trim|callback_check_nip_unique[' . $id . ']'
+        );
         $this->form_validation->set_rules('nama_pegawai', 'Nama', 'required|trim');
 
         if ($this->form_validation->run() === false) {
@@ -104,19 +152,42 @@ class Pegawai extends CI_Controller
 
         $data = [
             'nama_pegawai' => $this->input->post('nama_pegawai', true),
-            'nip' => $this->input->post('nip', true),
-            'id_divisi' => $this->input->post('id_divisi') ?: null
+            'nip'          => $this->input->post('nip', true),
+            'id_divisi'    => $this->input->post('id_divisi'),
+            'status_aktif' => $this->input->post('status_aktif')
         ];
 
+        // update pegawai
         $this->Pegawai_model->update($id, $data);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Pegawai berhasil diperbarui!</div>');
+
+        // sinkron ke absensi
+        if (!empty($nip_lama)) {
+            $this->db->where('nip', $nip_lama)
+                ->update('absensi_harian', [
+                    'nip'  => $data['nip'],
+                    'nama' => $data['nama_pegawai']
+                ]);
+        }
+
+        $this->session->set_flashdata(
+            'message',
+            '<div class="alert alert-success">Pegawai berhasil diperbarui!</div>'
+        );
         redirect('pegawai');
     }
 
+
+
+    /* =========================
+       DELETE
+    ========================== */
     public function delete($id)
     {
         $this->Pegawai_model->delete($id);
-        $this->session->set_flashdata('message', '<div class="alert alert-success">Pegawai berhasil dihapus!</div>');
+        $this->session->set_flashdata(
+            'message',
+            '<div class="alert alert-success">Pegawai berhasil dihapus!</div>'
+        );
         redirect('pegawai');
     }
 }

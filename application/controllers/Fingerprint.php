@@ -54,6 +54,23 @@ class Fingerprint extends CI_Controller
         $data['weather_text'] = $weather_codes[$data['weather_code']] ?? 'Tidak Diketahui';
     }
 
+    private function normalize_name($nama)
+    {
+        $nama = strtolower($nama);
+
+        // hapus gelar umum
+        $nama = preg_replace('/\b(mkom|s\.kom|skom|s\.pd|dr|ir|mt|msc)\b/', '', $nama);
+
+        // hapus simbol, titik, angka
+        $nama = preg_replace('/[^a-z\s]/', ' ', $nama);
+
+        // rapikan spasi
+        $nama = preg_replace('/\s+/', ' ', $nama);
+
+        return trim($nama);
+    }
+
+
     public function import_finger()
     {
         if (!isset($_FILES['file']['tmp_name'])) {
@@ -66,16 +83,16 @@ class Fingerprint extends CI_Controller
         $sheet = $spreadsheet->getActiveSheet();
 
         /* =========================
-       BACA PERIODE DARI EXCEL
+       PERIODE
     ========================= */
         $periode_text = trim($sheet->getCell('C2')->getValue());
         $tahun = date('Y');
         $bulan = date('m');
 
         if ($periode_text) {
-            preg_match_all('/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/', $periode_text, $matches);
-            if (!empty($matches[1])) {
-                $dt = DateTime::createFromFormat('d/m/Y', str_replace('-', '/', $matches[1][0]));
+            preg_match('/(\d{2}[\/\-]\d{2}[\/\-]\d{4})/', $periode_text, $m);
+            if ($m) {
+                $dt = DateTime::createFromFormat('d/m/Y', str_replace('-', '/', $m[1]));
                 if ($dt) {
                     $bulan = $dt->format('m');
                     $tahun = $dt->format('Y');
@@ -84,34 +101,64 @@ class Fingerprint extends CI_Controller
         }
 
         $data_insert = [];
+        $pegawai_list = $this->db->get('pegawai')->result(); // cache pegawai
         $highestRow = $sheet->getHighestRow();
 
         /* =========================
-       LOOP PEGAWAI
+       LOOP PEGAWAI (EXCEL)
     ========================= */
         for ($row = 5; $row <= $highestRow; $row++) {
 
-            $nama = trim($sheet->getCell("B{$row}")->getValue());
-            if ($nama === '') continue;
+            $nama_excel = trim($sheet->getCell("B{$row}")->getValue());
+            if ($nama_excel === '') continue;
 
-            $pegawai = $this->db->get_where('pegawai', ['nama_pegawai' => $nama])->row();
-            if ($pegawai) {
-                $nip = $pegawai->nip;
-            } else {
-                $nip = 'TMP' . time() . $row;
-                $this->db->insert('pegawai', [
-                    'nip' => $nip,
-                    'nama_pegawai' => $nama
-                ]);
+            $nama_normal_excel = $this->normalize_name($nama_excel);
+
+            /* =========================
+           CARI PEGAWAI (SIMILARITY)
+        ========================= */
+            $nip = null;
+            $best_percent = 0;
+
+            foreach ($pegawai_list as $p) {
+                $nama_db = $this->normalize_name($p->nama_pegawai);
+
+                similar_text($nama_db, $nama_normal_excel, $percent);
+
+                if ($percent > $best_percent) {
+                    $best_percent = $percent;
+                    $nip = $p->nip;
+                }
             }
 
             /* =========================
-           LOOP TANGGAL (1–31)
+           KEPUTUSAN PEGAWAI
+        ========================= */
+            if ($best_percent < 85 || !$nip) {
+                // ORANG BARU (AMAN)
+                $nip = 'DS' . str_pad(
+                    $this->db->count_all('pegawai') + 1,
+                    4,
+                    '0',
+                    STR_PAD_LEFT
+                );
+
+                $this->db->insert('pegawai', [
+                    'nip'          => $nip,
+                    'nama_pegawai' => $nama_excel
+                ]);
+
+                // refresh cache
+                $pegawai_list = $this->db->get('pegawai')->result();
+            }
+
+            /* =========================
+           LOOP TANGGAL
         ========================= */
             for ($colIndex = 4; $colIndex <= 34; $colIndex++) {
 
-                $tanggal_ke = $colIndex - 3;
-                if (!checkdate($bulan, $tanggal_ke, $tahun)) continue;
+                $tgl_ke = $colIndex - 3;
+                if (!checkdate($bulan, $tgl_ke, $tahun)) continue;
 
                 $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex);
                 $raw = trim($sheet->getCell($col . $row)->getValue());
@@ -122,59 +169,38 @@ class Fingerprint extends CI_Controller
                     preg_split("/\r\n|\n|\r/", $raw)
                 )));
 
-                $jam_in = null;
-                $jam_out = null;
+                $jam_in  = $lines[0] ?? null;
+                $jam_out = (count($lines) > 1) ? end($lines) : null;
 
-                if (count($lines) === 1) {
-                    $jam_in = $lines[0];
-                } elseif (count($lines) > 1) {
-                    $jam_in = $lines[0];
-                    $jam_out = end($lines);
-                }
-
-                $tanggal = "{$tahun}-{$bulan}-" . sprintf('%02d', $tanggal_ke);
-                $hariNum = date('N', strtotime($tanggal)); // 1=Senin
+                $tanggal = "{$tahun}-{$bulan}-" . sprintf('%02d', $tgl_ke);
 
                 /* =========================
-               JAM KERJA
+               TELAT
             ========================= */
                 $jam_masuk = '07:30:00';
-
-                /* =========================
-               HITUNG MENIT TELAT (FINAL)
-            ========================= */
                 $menit_telat = 0;
                 $id_denda = null;
 
-                // TELAT HANYA JIKA JAM MASUK > 07:30
-                if (!empty($jam_in) && $jam_in > $jam_masuk) {
+                if ($jam_in && $jam_in > $jam_masuk) {
+                    $menit_telat = floor((strtotime($jam_in) - strtotime($jam_masuk)) / 60);
 
-                    $menit_telat = floor(
-                        (strtotime($jam_in) - strtotime($jam_masuk)) / 60
-                    );
-
-                    // FK DENDA
-                    if ($menit_telat >= 1 && $menit_telat <= 29) {
-                        $id_denda = 1;
-                    } elseif ($menit_telat <= 90) {
-                        $id_denda = 2;
-                    } elseif ($menit_telat > 90) {
-                        $id_denda = 3;
-                    }
+                    if ($menit_telat <= 29) $id_denda = 1;
+                    elseif ($menit_telat <= 90) $id_denda = 2;
+                    else $id_denda = 3;
                 }
 
                 $data_insert[] = [
-                    'nip'          => $nip,
-                    'nama'         => $nama,
-                    'tanggal'      => $tanggal,
-                    'bulan'        => (int)$bulan,
-                    'tahun'        => (int)$tahun,
-                    'hari'         => date('l', strtotime($tanggal)),
-                    'jam_in'       => $jam_in,
-                    'jam_out'      => $jam_out,
-                    'menit_telat'  => $menit_telat,
-                    'id_denda'     => $id_denda,
-                    'keterangan'   => 'HADIR'
+                    'nip'         => $nip,
+                    'nama'        => $nama_excel,
+                    'tanggal'     => $tanggal,
+                    'bulan'       => (int)$bulan,
+                    'tahun'       => (int)$tahun,
+                    'hari'        => date('l', strtotime($tanggal)),
+                    'jam_in'      => $jam_in,
+                    'jam_out'     => $jam_out,
+                    'menit_telat' => $menit_telat,
+                    'id_denda'    => $id_denda,
+                    'keterangan'  => 'HADIR'
                 ];
             }
         }
@@ -189,6 +215,7 @@ class Fingerprint extends CI_Controller
 
         redirect('absensi/absen_harian');
     }
+
 
 
     public function edit_kehadiran($nip)
